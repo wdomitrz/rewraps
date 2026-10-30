@@ -1,0 +1,19 @@
+# CSS: block comments only. A `//` that is not a CSS comment must not be eaten.
+
+[case]
+name = a block comment wraps
+language = css
+column = 30
+-- input
+/* alpha beta gamma delta epsilon zeta */
+-- output
+/* alpha beta gamma delta
+ epsilon zeta */
+[case]
+name = a rule is untouched
+language = css
+column = 20
+-- input
+.alpha { color: red; }
+-- output
+.alpha { color: red; }

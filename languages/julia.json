@@ -1,0 +1,20 @@
+{
+  "$schema": "./schema.json",
+  "name": "Julia",
+  "ext": [
+    ".jl"
+  ],
+  "comments": [
+    {
+      "line": "#",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "#=",
+      "end": "=#",
+      "nesting": true,
+      "dialect": "markdown"
+    }
+  ]
+}

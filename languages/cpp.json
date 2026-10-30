@@ -1,0 +1,13 @@
+{
+  "$schema": "./schema.json",
+  "name": "C++",
+  "id": "cpp",
+  "ext": [".cpp", ".cc", ".cxx", ".hpp", ".hh", ".hxx", ".ipp"],
+  "comments": [
+    { "line": "///", "dialect": "doxygen" },
+    { "line": "//!", "dialect": "doxygen" },
+    { "line": "//", "dialect": "markdown" },
+    { "kind": "delimited", "start": "/**", "end": "*/", "decorate": "*", "dialect": "doxygen" },
+    { "kind": "delimited", "start": "/*", "end": "*/", "decorate": "*", "dialect": "markdown" }
+  ]
+}

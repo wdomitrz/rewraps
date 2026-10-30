@@ -1,0 +1,10 @@
+{
+  "$schema": "./schema.json",
+  "name": "CSS",
+  "id": "css",
+  "ext": [".css"],
+  "notes": "CSS has no line comments in the language itself; `//` is not valid CSS and is deliberately absent. Both markers would otherwise swallow a rule line.",
+  "comments": [
+    { "kind": "delimited", "start": "/*", "end": "*/", "dialect": "markdown" }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "./schema.json",
+  "name": "Svelte",
+  "ext": [
+    ".svelte"
+  ],
+  "comments": [
+    {
+      "kind": "delimited",
+      "start": "<!--",
+      "end": "-->",
+      "dialect": "markdown"
+    }
+  ]
+}

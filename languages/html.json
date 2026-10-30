@@ -1,0 +1,10 @@
+{
+  "$schema": "./schema.json",
+  "name": "HTML",
+  "id": "html",
+  "ext": [".html", ".htm"],
+  "notes": "Only comments are wrapped; everything else in the file is verbatim, including <pre>, <script> and <style> bodies. Text reflow between tags needs a tag parser and is deliberately out of scope for now.",
+  "comments": [
+    { "kind": "delimited", "start": "<!--", "end": "-->", "dialect": "markdown" }
+  ]
+}

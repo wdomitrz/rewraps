@@ -1,0 +1,573 @@
+# One case per language, so no language can ship without proof that its
+# marker is wired up. The interesting behaviour lives in the hand-written
+# files beside this one.
+
+[case]
+name = a comment wraps
+language = ada
+column = 30
+-- input
+-- alpha beta gamma delta epsilon zeta
+-- output
+-- alpha beta gamma delta
+-- epsilon zeta
+[case]
+name = a comment wraps
+language = bat
+column = 30
+-- input
+rem  alpha beta gamma delta epsilon zeta
+-- output
+rem alpha beta gamma delta
+rem epsilon zeta
+[case]
+name = a comment wraps
+language = c
+column = 30
+-- input
+/// alpha beta gamma delta epsilon zeta
+-- output
+/// alpha beta gamma delta
+/// epsilon zeta
+[case]
+name = a comment wraps
+language = csharp
+column = 30
+-- input
+/// alpha beta gamma delta epsilon zeta
+-- output
+/// alpha beta gamma delta
+/// epsilon zeta
+[case]
+name = a comment wraps
+language = cpp
+column = 30
+-- input
+/// alpha beta gamma delta epsilon zeta
+-- output
+/// alpha beta gamma delta
+/// epsilon zeta
+[case]
+name = a comment wraps
+language = cmake
+column = 30
+-- input
+# alpha beta gamma delta epsilon zeta
+-- output
+# alpha beta gamma delta
+# epsilon zeta
+[case]
+name = a comment wraps
+language = css
+column = 30
+-- input
+/* alpha beta gamma delta epsilon zeta
+-- output
+/* alpha beta gamma delta
+ epsilon zeta
+[case]
+name = code beside a comment is untouched
+language = css
+column = 30
+-- input
+call(alpha, beta_gamma_delta_epsilon_zeta);
+-- output
+call(alpha, beta_gamma_delta_epsilon_zeta);
+[case]
+name = a comment wraps
+language = clojure
+column = 30
+-- input
+; alpha beta gamma delta epsilon zeta
+-- output
+; alpha beta gamma delta
+; epsilon zeta
+[case]
+name = a comment wraps
+language = commonlisp
+column = 30
+-- input
+; alpha beta gamma delta epsilon zeta
+-- output
+; alpha beta gamma delta
+; epsilon zeta
+[case]
+name = a comment wraps
+language = d
+column = 30
+-- input
+/// alpha beta gamma delta epsilon zeta
+-- output
+/// alpha beta gamma delta
+/// epsilon zeta
+[case]
+name = a comment wraps
+language = dockerfile
+column = 30
+-- input
+# alpha beta gamma delta epsilon zeta
+-- output
+# alpha beta gamma delta
+# epsilon zeta
+[case]
+name = a comment wraps
+language = elixir
+column = 30
+-- input
+# alpha beta gamma delta epsilon zeta
+-- output
+# alpha beta gamma delta
+# epsilon zeta
+[case]
+name = a comment wraps
+language = elm
+column = 30
+-- input
+-- alpha beta gamma delta epsilon zeta
+-- output
+-- alpha beta gamma delta
+-- epsilon zeta
+[case]
+name = a comment wraps
+language = fsharp
+column = 30
+-- input
+/// alpha beta gamma delta epsilon zeta
+-- output
+/// alpha beta gamma delta
+/// epsilon zeta
+[case]
+name = a comment wraps
+language = go
+column = 30
+-- input
+// alpha beta gamma delta epsilon zeta
+-- output
+// alpha beta gamma delta
+// epsilon zeta
+[case]
+name = a comment wraps
+language = graphql
+column = 30
+-- input
+# alpha beta gamma delta epsilon zeta
+-- output
+# alpha beta gamma delta
+# epsilon zeta
+[case]
+name = a comment wraps
+language = groovy
+column = 30
+-- input
+/// alpha beta gamma delta epsilon zeta
+-- output
+/// alpha beta gamma delta
+/// epsilon zeta
+[case]
+name = a comment wraps
+language = html
+column = 30
+-- input
+<!-- alpha beta gamma delta epsilon zeta
+-- output
+<!-- alpha beta gamma delta
+ epsilon zeta
+[case]
+name = code beside a comment is untouched
+language = html
+column = 30
+-- input
+call(alpha, beta_gamma_delta_epsilon_zeta);
+-- output
+call(alpha, beta_gamma_delta_epsilon_zeta);
+[case]
+name = a comment wraps
+language = haskell
+column = 30
+-- input
+-- alpha beta gamma delta epsilon zeta
+-- output
+-- alpha beta gamma delta
+-- epsilon zeta
+[case]
+name = a comment wraps
+language = ini
+column = 30
+-- input
+; alpha beta gamma delta epsilon zeta
+-- output
+; alpha beta gamma delta
+; epsilon zeta
+[case]
+name = a comment wraps
+language = jsonc
+column = 30
+-- input
+// alpha beta gamma delta epsilon zeta
+-- output
+// alpha beta gamma delta
+// epsilon zeta
+[case]
+name = a comment wraps
+language = java
+column = 30
+-- input
+/// alpha beta gamma delta epsilon zeta
+-- output
+/// alpha beta gamma delta
+/// epsilon zeta
+[case]
+name = a comment wraps
+language = julia
+column = 30
+-- input
+# alpha beta gamma delta epsilon zeta
+-- output
+# alpha beta gamma delta
+# epsilon zeta
+[case]
+name = a comment wraps
+language = kotlin
+column = 30
+-- input
+/// alpha beta gamma delta epsilon zeta
+-- output
+/// alpha beta gamma delta
+/// epsilon zeta
+[case]
+name = a comment wraps
+language = latex
+column = 30
+-- input
+% alpha beta gamma delta epsilon zeta
+-- output
+% alpha beta gamma delta
+% epsilon zeta
+[case]
+name = a comment wraps
+language = less
+column = 30
+-- input
+// alpha beta gamma delta epsilon zeta
+-- output
+// alpha beta gamma delta
+// epsilon zeta
+[case]
+name = a comment wraps
+language = lua
+column = 30
+-- input
+-- alpha beta gamma delta epsilon zeta
+-- output
+-- alpha beta gamma delta
+-- epsilon zeta
+[case]
+name = a comment wraps
+language = matlab
+column = 30
+-- input
+% alpha beta gamma delta epsilon zeta
+-- output
+% alpha beta gamma delta
+% epsilon zeta
+[case]
+name = a comment wraps
+language = makefile
+column = 30
+-- input
+# alpha beta gamma delta epsilon zeta
+-- output
+# alpha beta gamma delta
+# epsilon zeta
+[case]
+name = a paragraph wraps
+language = markdown
+column = 30
+-- input
+alpha beta gamma delta epsilon zeta
+-- output
+alpha beta gamma delta epsilon
+zeta
+[case]
+name = a comment wraps
+language = ocaml
+column = 30
+-- input
+(** alpha beta gamma delta epsilon zeta
+-- output
+(** alpha beta gamma delta
+ * epsilon zeta
+[case]
+name = code beside a comment is untouched
+language = ocaml
+column = 30
+-- input
+call(alpha, beta_gamma_delta_epsilon_zeta);
+-- output
+call(alpha, beta_gamma_delta_epsilon_zeta);
+[case]
+name = a comment wraps
+language = objective-c
+column = 30
+-- input
+/// alpha beta gamma delta epsilon zeta
+-- output
+/// alpha beta gamma delta
+/// epsilon zeta
+[case]
+name = a comment wraps
+language = php
+column = 30
+-- input
+/// alpha beta gamma delta epsilon zeta
+-- output
+/// alpha beta gamma delta
+/// epsilon zeta
+[case]
+name = a comment wraps
+language = perl
+column = 30
+-- input
+# alpha beta gamma delta epsilon zeta
+-- output
+# alpha beta gamma delta
+# epsilon zeta
+[case]
+name = a paragraph wraps
+language = plaintext
+column = 30
+-- input
+alpha beta gamma delta epsilon zeta
+-- output
+alpha beta gamma delta epsilon
+zeta
+[case]
+name = a comment wraps
+language = powershell
+column = 30
+-- input
+# alpha beta gamma delta epsilon zeta
+-- output
+# alpha beta gamma delta
+# epsilon zeta
+[case]
+name = a comment wraps
+language = prolog
+column = 30
+-- input
+% alpha beta gamma delta epsilon zeta
+-- output
+% alpha beta gamma delta
+% epsilon zeta
+[case]
+name = a comment wraps
+language = proto
+column = 30
+-- input
+/// alpha beta gamma delta epsilon zeta
+-- output
+/// alpha beta gamma delta
+/// epsilon zeta
+[case]
+name = a comment wraps
+language = purescript
+column = 30
+-- input
+-- alpha beta gamma delta epsilon zeta
+-- output
+-- alpha beta gamma delta
+-- epsilon zeta
+[case]
+name = a comment wraps
+language = python
+column = 30
+-- input
+# alpha beta gamma delta epsilon zeta
+-- output
+# alpha beta gamma delta
+# epsilon zeta
+[case]
+name = a comment wraps
+language = r
+column = 30
+-- input
+#' alpha beta gamma delta epsilon zeta
+-- output
+#' alpha beta gamma delta
+#' epsilon zeta
+[case]
+name = a comment wraps
+language = ruby
+column = 30
+-- input
+# alpha beta gamma delta epsilon zeta
+-- output
+# alpha beta gamma delta
+# epsilon zeta
+[case]
+name = a comment wraps
+language = rust
+column = 30
+-- input
+/// alpha beta gamma delta epsilon zeta
+-- output
+/// alpha beta gamma delta
+/// epsilon zeta
+[case]
+name = a comment wraps
+language = scss
+column = 30
+-- input
+// alpha beta gamma delta epsilon zeta
+-- output
+// alpha beta gamma delta
+// epsilon zeta
+[case]
+name = a comment wraps
+language = sql
+column = 30
+-- input
+-- alpha beta gamma delta epsilon zeta
+-- output
+-- alpha beta gamma delta
+-- epsilon zeta
+[case]
+name = a comment wraps
+language = scala
+column = 30
+-- input
+/// alpha beta gamma delta epsilon zeta
+-- output
+/// alpha beta gamma delta
+/// epsilon zeta
+[case]
+name = a comment wraps
+language = scheme
+column = 30
+-- input
+; alpha beta gamma delta epsilon zeta
+-- output
+; alpha beta gamma delta
+; epsilon zeta
+[case]
+name = a comment wraps
+language = shellscript
+column = 30
+-- input
+# alpha beta gamma delta epsilon zeta
+-- output
+# alpha beta gamma delta
+# epsilon zeta
+[case]
+name = a comment wraps
+language = svelte
+column = 30
+-- input
+<!-- alpha beta gamma delta epsilon zeta
+-- output
+<!-- alpha beta gamma delta
+ epsilon zeta
+[case]
+name = code beside a comment is untouched
+language = svelte
+column = 30
+-- input
+call(alpha, beta_gamma_delta_epsilon_zeta);
+-- output
+call(alpha, beta_gamma_delta_epsilon_zeta);
+[case]
+name = a comment wraps
+language = swift
+column = 30
+-- input
+/// alpha beta gamma delta epsilon zeta
+-- output
+/// alpha beta gamma delta
+/// epsilon zeta
+[case]
+name = a comment wraps
+language = toml
+column = 30
+-- input
+# alpha beta gamma delta epsilon zeta
+-- output
+# alpha beta gamma delta
+# epsilon zeta
+[case]
+name = a comment wraps
+language = typescript
+column = 30
+-- input
+/// alpha beta gamma delta epsilon zeta
+-- output
+/// alpha beta gamma delta
+/// epsilon zeta
+[case]
+name = a comment wraps
+language = systemverilog
+column = 30
+-- input
+// alpha beta gamma delta epsilon zeta
+-- output
+// alpha beta gamma delta
+// epsilon zeta
+[case]
+name = a comment wraps
+language = vue
+column = 30
+-- input
+<!-- alpha beta gamma delta epsilon zeta
+-- output
+<!-- alpha beta gamma delta
+ epsilon zeta
+[case]
+name = code beside a comment is untouched
+language = vue
+column = 30
+-- input
+call(alpha, beta_gamma_delta_epsilon_zeta);
+-- output
+call(alpha, beta_gamma_delta_epsilon_zeta);
+[case]
+name = a comment wraps
+language = xaml
+column = 30
+-- input
+<!-- alpha beta gamma delta epsilon zeta
+-- output
+<!-- alpha beta gamma delta
+ epsilon zeta
+[case]
+name = code beside a comment is untouched
+language = xaml
+column = 30
+-- input
+call(alpha, beta_gamma_delta_epsilon_zeta);
+-- output
+call(alpha, beta_gamma_delta_epsilon_zeta);
+[case]
+name = a comment wraps
+language = xml
+column = 30
+-- input
+<!-- alpha beta gamma delta epsilon zeta
+-- output
+<!-- alpha beta gamma delta
+ epsilon zeta
+[case]
+name = code beside a comment is untouched
+language = xml
+column = 30
+-- input
+call(alpha, beta_gamma_delta_epsilon_zeta);
+-- output
+call(alpha, beta_gamma_delta_epsilon_zeta);
+[case]
+name = a comment wraps
+language = yaml
+column = 30
+-- input
+# alpha beta gamma delta epsilon zeta
+-- output
+# alpha beta gamma delta
+# epsilon zeta

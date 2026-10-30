@@ -1,0 +1,21 @@
+{
+  "$schema": "./schema.json",
+  "name": "PowerShell",
+  "id": "powershell",
+  "ext": [
+    ".ps1",
+    ".psm1"
+  ],
+  "comments": [
+    {
+      "line": "#",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "<#",
+      "end": "#>",
+      "dialect": "markdown"
+    }
+  ]
+}

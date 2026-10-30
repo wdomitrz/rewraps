@@ -1,0 +1,22 @@
+{
+  "$schema": "./schema.json",
+  "name": "SQL",
+  "ext": [
+    ".sql",
+    ".psql",
+    ".pgsql"
+  ],
+  "comments": [
+    {
+      "line": "--",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "/*",
+      "end": "*/",
+      "decorate": "*",
+      "dialect": "markdown"
+    }
+  ]
+}

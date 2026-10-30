@@ -1,0 +1,14 @@
+{
+  "$schema": "./schema.json",
+  "name": "Ada",
+  "ext": [
+    ".adb",
+    ".ads"
+  ],
+  "comments": [
+    {
+      "line": "--",
+      "dialect": "markdown"
+    }
+  ]
+}

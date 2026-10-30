@@ -1,0 +1,64 @@
+# TypeScript and JavaScript: the same marker table, so one fixture file.
+
+[case]
+name = a line comment wraps
+language = typescript
+column = 30
+-- input
+// alpha beta gamma delta epsilon zeta
+-- output
+// alpha beta gamma delta
+// epsilon zeta
+[case]
+name = a jsdoc block keeps its star column
+language = typescript
+column = 30
+-- input
+/**
+ * alpha beta gamma delta epsilon zeta
+ */
+-- output
+/**
+ * alpha beta gamma delta
+ * epsilon zeta
+ */
+[case]
+name = a jsdoc tag starts its own block
+language = typescript
+column = 40
+-- input
+/**
+ * alpha beta gamma delta epsilon zeta eta
+ * @param value the value to use
+ */
+-- output
+/**
+ * alpha beta gamma delta epsilon zeta
+ * eta
+ * @param value the value to use
+ */
+[case]
+name = a one-line block comment is split with the star
+language = typescript
+column = 30
+-- input
+/* alpha beta gamma delta epsilon zeta */
+-- output
+/* alpha beta gamma delta
+ epsilon zeta */
+[case]
+name = a template literal is not a comment
+language = typescript
+column = 20
+-- input
+const x = `alpha beta gamma delta`;
+-- output
+const x = `alpha beta gamma delta`;
+[case]
+name = code stays exactly as written
+language = typescript
+column = 10
+-- input
+const alpha = betaGammaDeltaEpsilon;
+-- output
+const alpha = betaGammaDeltaEpsilon;

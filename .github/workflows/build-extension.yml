@@ -1,0 +1,70 @@
+name: Build and Package Extension
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+
+      # The generator must match the wasm-bindgen crate byte for byte; a
+      # mismatch produces a module the shim cannot link, and the failure shows
+      # up at load time in the editor rather than here. It is therefore taken
+      # from Cargo.lock, never hard-coded, and the download is checked against
+      # the digest the release publishes.
+      - name: Install the wasm-bindgen generator
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          version=$(awk '/^name = "wasm-bindgen"$/{getline; gsub(/[",]/,""); print $3}' "$GITHUB_WORKSPACE/Cargo.lock")
+          asset="wasm-bindgen-${version}-x86_64-unknown-linux-musl.tar.gz"
+          base="https://github.com/wasm-bindgen/wasm-bindgen/releases/download/${version}"
+          curl -fsSL -o "$asset" "$base/$asset"
+          curl -fsSL -o "$asset.sha256sum" "$base/$asset.sha256sum"
+          expected=$(awk '{print $1}' "$asset.sha256sum")
+          echo "${expected}  ${asset}" | sha256sum -c -
+          tar xzf "$asset"
+          install -m 0755 "wasm-bindgen-${version}-x86_64-unknown-linux-musl/wasm-bindgen" "$HOME/.cargo/bin/wasm-bindgen"
+          wasm-bindgen --version
+
+      - run: npm ci
+
+      - run: make check
+
+      - name: Build VSIX package
+        run: make vsix
+
+      - name: Get extension version
+        id: get_version
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "ext_version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Upload to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.ext_version }}
+          name: Release v${{ steps.get_version.outputs.ext_version }}
+          files: "*.vsix"
+          overwrite_files: false
+          draft: false
+          prerelease: false

@@ -1,0 +1,25 @@
+# Plain text: paragraphs separated by blank lines only.
+
+[case]
+name = a paragraph wraps
+language = plaintext
+column = 20
+-- input
+alpha beta gamma delta epsilon
+-- output
+alpha beta gamma
+delta epsilon
+[case]
+name = blank lines separate paragraphs
+language = plaintext
+column = 20
+-- input
+alpha beta gamma delta epsilon
+
+one two three four five six
+-- output
+alpha beta gamma
+delta epsilon
+
+one two three four
+five six

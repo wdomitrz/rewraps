@@ -1,0 +1,22 @@
+{
+  "$schema": "./schema.json",
+  "name": "Scheme",
+  "ext": [
+    ".scm",
+    ".ss",
+    ".rkt"
+  ],
+  "comments": [
+    {
+      "line": ";",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "#|",
+      "end": "|#",
+      "nesting": true,
+      "dialect": "markdown"
+    }
+  ]
+}

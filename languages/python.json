@@ -1,0 +1,12 @@
+{
+  "$schema": "./schema.json",
+  "name": "Python",
+  "id": "python",
+  "ext": [".py", ".pyi", ".pyw"],
+  "notes": "Docstrings are string literals, not comments, which is why they are their own kind: a single-line one must not be split (that changes the value), and the guards for doctests and literal blocks have to ship with the support or a docstring gets mangled.",
+  "comments": [
+    { "line": "#", "not_followed_by": "!", "dialect": "markdown" },
+    { "kind": "string", "start": "\"\"\"", "end": "\"\"\"", "single_line": "skip", "dialect": "docstring" },
+    { "kind": "string", "start": "'''", "end": "'''", "single_line": "skip", "dialect": "docstring" }
+  ]
+}

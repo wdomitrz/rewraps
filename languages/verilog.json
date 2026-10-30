@@ -1,0 +1,24 @@
+{
+  "$schema": "./schema.json",
+  "name": "Verilog",
+  "id": "systemverilog",
+  "ext": [
+    ".v",
+    ".sv",
+    ".vh",
+    ".svh"
+  ],
+  "comments": [
+    {
+      "line": "//",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "/*",
+      "end": "*/",
+      "decorate": "*",
+      "dialect": "markdown"
+    }
+  ]
+}

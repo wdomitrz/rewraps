@@ -1,0 +1,17 @@
+{
+  "$schema": "./schema.json",
+  "name": "Shell",
+  "id": "shellscript",
+  "ext": [
+    ".sh",
+    ".bash",
+    ".zsh"
+  ],
+  "comments": [
+    {
+      "line": "#",
+      "not_followed_by": "!",
+      "dialect": "markdown"
+    }
+  ]
+}

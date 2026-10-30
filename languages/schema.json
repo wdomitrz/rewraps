@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "A Rewraps language",
+  "description": "One file per language under languages/. The build validates it and generates the table the engine matches on, so a new language costs data, not code. Run `cargo xtask new-language <name>` to start one.",
+  "type": "object",
+  "required": ["name", "ext", "comments"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": {
+      "type": "string",
+      "description": "Display name, also matched against the editor's language id when it has no separate id."
+    },
+    "id": {
+      "type": "string",
+      "description": "Editor language id, when it differs from the name lowercased without spaces.",
+      "pattern": "^[a-z0-9+#._-]+$"
+    },
+    "ext": {
+      "type": "array",
+      "minItems": 1,
+      "description": "File extensions ('.rs') or exact file names ('Makefile'). Used when the editor reports no language id, or a generic one.",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Why this language is shaped the way it is. Shown by `cargo xtask coverage`; never parsed."
+    },
+    "comments": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Every way this language writes a comment. The engine picks the longest matching marker, so order does not matter; a duplicate marker is a build error.",
+      "items": {
+        "type": "object",
+        "required": ["kind"],
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": ["line", "delimited", "string"],
+            "description": "line: a marker repeated on each line. delimited: a start and end marker. string: a quoted documentation string."
+          },
+          "line": {
+            "type": "string",
+            "minLength": 1,
+            "description": "For kind=line: the marker, exactly as written, e.g. '//' or '# '."
+          },
+          "start": {
+            "type": "string",
+            "minLength": 1,
+            "description": "For delimited/string: the opening marker."
+          },
+          "end": {
+            "type": "string",
+            "minLength": 1,
+            "description": "For delimited/string: the closing marker."
+          },
+          "nesting": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether opening markers nest inside one another (Rust '/* */', OCaml '(* *)')."
+          },
+          "decorate": {
+            "type": "string",
+            "maxLength": 1,
+            "description": "The character a block-comment body line conventionally carries before its text, e.g. '*' for '/* * text */'. Re-emitted on every new line."
+          },
+          "dialect": {
+            "enum": [
+              "markdown",
+              "jsdoc",
+              "xmldoc",
+              "javadoc",
+              "doxygen",
+              "godoc",
+              "rustdoc",
+              "dartdoc",
+              "plaintext",
+              "docstring",
+              "verbatim"
+            ],
+            "default": "markdown",
+            "description": "How the text inside this comment is read. A new dialect is the expensive axis; reuse an existing one."
+          },
+          "single_line": {
+            "enum": ["skip", "wrap"],
+            "description": "For kind=string only, and required: whether a string that opens and closes on the same line may be split. 'skip' is the safe default, because a newline inside a literal changes its value."
+          },
+          "not_followed_by": {
+            "type": "string",
+            "maxLength": 1,
+            "description": "Reject this marker when the next character is this one. Used for '#!' shebangs, which are not comments."
+          },
+          "notes": {
+            "type": "string",
+            "description": "Why this shape is here. Never parsed."
+          }
+        }
+      }
+    }
+  }
+}

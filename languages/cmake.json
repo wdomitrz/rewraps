@@ -1,0 +1,16 @@
+{
+  "$schema": "./schema.json",
+  "name": "CMake",
+  "id": "cmake",
+  "ext": [
+    "CMakeLists.txt",
+    ".cmake"
+  ],
+  "comments": [
+    {
+      "line": "#",
+      "not_followed_by": "!",
+      "dialect": "markdown"
+    }
+  ]
+}

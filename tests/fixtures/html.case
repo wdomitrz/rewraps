@@ -1,0 +1,32 @@
+# HTML: comments only; markup, scripts and styles are verbatim.
+
+[case]
+name = an html comment wraps
+language = html
+column = 30
+-- input
+<!-- alpha beta gamma delta epsilon zeta -->
+-- output
+<!-- alpha beta gamma delta
+ epsilon zeta -->
+[case]
+name = a multi-line comment keeps its markers
+language = html
+column = 30
+-- input
+<!--
+  alpha beta gamma delta epsilon zeta
+-->
+-- output
+<!--
+ alpha beta gamma delta
+ epsilon zeta
+-->
+[case]
+name = tags are untouched
+language = html
+column = 20
+-- input
+<p class="alpha beta gamma">text</p>
+-- output
+<p class="alpha beta gamma">text</p>

@@ -1,0 +1,29 @@
+# C++: the same shapes as C, plus its own extensions.
+
+[case]
+name = a line comment wraps
+language = cpp
+column = 30
+-- input
+// alpha beta gamma delta epsilon zeta
+-- output
+// alpha beta gamma delta
+// epsilon zeta
+[case]
+name = a doc comment keeps its marker
+language = cpp
+column = 30
+-- input
+/// alpha beta gamma delta epsilon zeta
+-- output
+/// alpha beta gamma delta
+/// epsilon zeta
+[case]
+name = a block comment wraps
+language = cpp
+column = 30
+-- input
+/* alpha beta gamma delta epsilon zeta */
+-- output
+/* alpha beta gamma delta
+ * epsilon zeta */

@@ -1,0 +1,96 @@
+# Python: hash comments, docstrings as string literals, and the guards that
+# keep doctests and literal blocks intact.
+
+[case]
+name = a hash comment wraps
+language = python
+column = 30
+-- input
+# alpha beta gamma delta epsilon zeta
+-- output
+# alpha beta gamma delta
+# epsilon zeta
+[case]
+name = a shebang is not a comment
+language = python
+column = 30
+-- input
+#!/usr/bin/env python3
+-- output
+#!/usr/bin/env python3
+[case]
+name = a docstring wraps without touching its content
+language = python
+column = 30
+-- input
+"""alpha beta gamma delta epsilon zeta
+"""
+-- output
+"""alpha beta gamma delta
+epsilon zeta
+"""
+[case]
+name = a single-line string keeps its value
+language = python
+column = 20
+-- input
+x = """alpha beta gamma delta"""
+-- output
+x = """alpha beta gamma delta"""
+[case]
+name = a doctest inside a docstring is never reflowed
+language = python
+column = 40
+-- input
+def f():
+    """alpha beta gamma delta epsilon zeta eta
+
+    >>> result = alpha_beta_gamma_delta_epsilon_zeta_eta()
+    """
+-- output
+def f():
+    """alpha beta gamma delta epsilon
+    zeta eta
+
+    >>> result = alpha_beta_gamma_delta_epsilon_zeta_eta()
+    """
+[case]
+name = a literal block after a double colon is frozen
+language = python
+column = 40
+-- input
+def f():
+    """Summary text that is long enough to need wrapping somewhere
+
+    Example::
+
+        alpha beta gamma delta epsilon zeta eta theta iota
+    """
+-- output
+def f():
+    """Summary text that is long enough
+    to need wrapping somewhere
+
+    Example::
+
+        alpha beta gamma delta epsilon zeta eta theta iota
+    """
+[case]
+name = a directive and its body are frozen
+language = python
+column = 40
+-- input
+def f():
+    """alpha beta gamma delta epsilon zeta eta theta
+
+    .. note::
+       alpha beta gamma delta epsilon zeta eta theta iota
+    """
+-- output
+def f():
+    """alpha beta gamma delta epsilon
+    zeta eta theta
+
+    .. note::
+       alpha beta gamma delta epsilon zeta eta theta iota
+    """

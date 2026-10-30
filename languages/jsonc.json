@@ -1,0 +1,23 @@
+{
+  "$schema": "./schema.json",
+  "name": "JSON",
+  "id": "jsonc",
+  "ext": [
+    ".json",
+    ".jsonc",
+    ".json5"
+  ],
+  "comments": [
+    {
+      "line": "//",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "/*",
+      "end": "*/",
+      "decorate": "*",
+      "dialect": "markdown"
+    }
+  ]
+}

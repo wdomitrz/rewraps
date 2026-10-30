@@ -1,0 +1,27 @@
+{
+  "$schema": "./schema.json",
+  "name": "F#",
+  "id": "fsharp",
+  "ext": [
+    ".fs",
+    ".fsi",
+    ".fsx"
+  ],
+  "comments": [
+    {
+      "line": "///",
+      "dialect": "xmldoc"
+    },
+    {
+      "line": "//",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "(*",
+      "end": "*)",
+      "nesting": true,
+      "dialect": "markdown"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+# Kotlin: line comments, doc comments, and nested block comments.
+
+[case]
+name = a line comment wraps
+language = kotlin
+column = 30
+-- input
+// alpha beta gamma delta epsilon zeta
+-- output
+// alpha beta gamma delta
+// epsilon zeta
+[case]
+name = a kdoc block wraps
+language = kotlin
+column = 30
+-- input
+/**
+ * alpha beta gamma delta epsilon zeta
+ */
+-- output
+/**
+ * alpha beta gamma delta
+ * epsilon zeta
+ */
+[case]
+name = a block comment nests
+language = kotlin
+column = 50
+-- input
+/* outer /* inner */ still outer text here */
+-- output
+/* outer /* inner */ still outer text here */

@@ -1,0 +1,32 @@
+{
+  "$schema": "./schema.json",
+  "name": "Groovy",
+  "ext": [
+    ".groovy",
+    ".gradle"
+  ],
+  "comments": [
+    {
+      "line": "///",
+      "dialect": "markdown"
+    },
+    {
+      "line": "//",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "/**",
+      "end": "*/",
+      "decorate": "*",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "/*",
+      "end": "*/",
+      "decorate": "*",
+      "dialect": "markdown"
+    }
+  ]
+}

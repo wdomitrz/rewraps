@@ -1,0 +1,15 @@
+{
+  "$schema": "./schema.json",
+  "name": "Batch",
+  "id": "bat",
+  "ext": [
+    ".bat",
+    ".cmd"
+  ],
+  "comments": [
+    {
+      "line": "rem ",
+      "dialect": "markdown"
+    }
+  ]
+}

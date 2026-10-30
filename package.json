@@ -1,0 +1,53 @@
+{
+  "name": "rewraps",
+  "displayName": "Rewraps",
+  "description": "Hard word wrapping for comments and other text, at a given column.",
+  "version": "0.3.1",
+  "publisher": "wdomitrz",
+  "license": "AGPL-3.0-only",
+  "repository": { "type": "git", "url": "https://github.com/wdomitrz/rewraps.git" },
+  "engines": { "vscode": "^1.100.0" },
+  "categories": ["Formatters"],
+  "keywords": ["wrap", "reflow", "comments", "column", "prose"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "rewraps.wrap", "title": "Rewraps: Wrap Selection or Comment" },
+      { "command": "rewraps.wrapAt", "title": "Rewraps: Wrap at Column..." },
+      { "command": "rewraps.toggleAutoWrap", "title": "Rewraps: Toggle Auto-Wrap for This File" }
+    ],
+    "configuration": {
+      "title": "Rewraps",
+      "properties": {
+        "rewraps.autoWrap.enabled": {
+          "scope": "language-overridable",
+          "type": "boolean",
+          "default": true,
+          "description": "Wrap the current line as you type past the column. Toggle it per file from the command palette."
+        },
+        "rewraps.autoWrap.notification": {
+          "scope": "window",
+          "type": "string",
+          "enum": ["icon", "text", "none"],
+          "default": "icon",
+          "description": "How to show whether auto-wrap is on for the current file."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p ./ --noEmit",
+    "bundle": "esbuild src/extension.ts --bundle --platform=node --format=cjs --external:vscode --minify --outfile=dist/extension.js",
+    "compile": "npm run typecheck && npm run bundle",
+    "test": "node scripts/test-wasm.mjs",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/vscode": "^1.100.0",
+    "@vscode/vsce": "^3.6.4",
+    "esbuild": "^0.28.0",
+    "typescript": "^5.9.3"
+  }
+}

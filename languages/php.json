@@ -1,0 +1,35 @@
+{
+  "$schema": "./schema.json",
+  "name": "PHP",
+  "ext": [
+    ".php"
+  ],
+  "comments": [
+    {
+      "line": "///",
+      "dialect": "markdown"
+    },
+    {
+      "line": "//",
+      "dialect": "markdown"
+    },
+    {
+      "line": "#",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "/**",
+      "end": "*/",
+      "decorate": "*",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "/*",
+      "end": "*/",
+      "decorate": "*",
+      "dialect": "markdown"
+    }
+  ]
+}

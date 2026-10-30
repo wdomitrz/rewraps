@@ -1,0 +1,31 @@
+{
+  "$schema": "./schema.json",
+  "name": "Swift",
+  "ext": [
+    ".swift"
+  ],
+  "comments": [
+    {
+      "line": "///",
+      "dialect": "markdown"
+    },
+    {
+      "line": "//",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "/**",
+      "end": "*/",
+      "decorate": "*",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "/*",
+      "end": "*/",
+      "decorate": "*",
+      "dialect": "markdown"
+    }
+  ]
+}

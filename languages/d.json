@@ -1,0 +1,31 @@
+{
+  "$schema": "./schema.json",
+  "name": "D",
+  "ext": [
+    ".d"
+  ],
+  "comments": [
+    {
+      "line": "///",
+      "dialect": "doxygen"
+    },
+    {
+      "line": "//",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "/**",
+      "end": "*/",
+      "decorate": "*",
+      "dialect": "doxygen"
+    },
+    {
+      "kind": "delimited",
+      "start": "/*",
+      "end": "*/",
+      "decorate": "*",
+      "dialect": "markdown"
+    }
+  ]
+}

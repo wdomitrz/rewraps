@@ -1,0 +1,11 @@
+{
+  "$schema": "./schema.json",
+  "name": "Go",
+  "id": "go",
+  "ext": [".go"],
+  "notes": "godoc treats an indented line as code, so a code sample inside a comment survives without fenced markers.",
+  "comments": [
+    { "line": "//", "dialect": "godoc" },
+    { "kind": "delimited", "start": "/*", "end": "*/", "dialect": "godoc" }
+  ]
+}

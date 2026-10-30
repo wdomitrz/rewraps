@@ -1,0 +1,16 @@
+{
+  "$schema": "./schema.json",
+  "name": "Makefile",
+  "id": "makefile",
+  "ext": [
+    "Makefile",
+    ".mk"
+  ],
+  "notes": "Identified by file name: a Makefile has no extension.",
+  "comments": [
+    {
+      "line": "#",
+      "dialect": "markdown"
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+# Markdown files: the whole document is content.
+
+[case]
+name = a paragraph wraps
+language = markdown
+column = 30
+-- input
+alpha beta gamma delta epsilon zeta
+-- output
+alpha beta gamma delta epsilon
+zeta
+[case]
+name = a fenced block is never touched
+language = markdown
+column = 20
+-- input
+```
+alpha beta gamma delta epsilon
+```
+-- output
+```
+alpha beta gamma delta epsilon
+```
+[case]
+name = an atx heading is frozen
+language = markdown
+column = 20
+-- input
+# alpha beta gamma delta epsilon
+-- output
+# alpha beta gamma delta epsilon
+[case]
+name = a setext heading is frozen
+language = markdown
+column = 20
+-- input
+alpha beta gamma delta epsilon
+===
+-- output
+alpha beta gamma delta epsilon
+===
+[case]
+name = a list item wraps under its text
+language = markdown
+column = 30
+-- input
+- alpha beta gamma delta epsilon zeta
+-- output
+- alpha beta gamma delta
+  epsilon zeta
+[case]
+name = a blockquote keeps its markers on every line
+language = markdown
+column = 30
+-- input
+> alpha beta gamma delta epsilon zeta
+-- output
+> alpha beta gamma delta
+> epsilon zeta
+[case]
+name = a table is frozen
+language = markdown
+column = 20
+-- input
+| alpha | beta gamma delta |
+| --- | --- |
+-- output
+| alpha | beta gamma delta |
+| --- | --- |
+[case]
+name = front matter is frozen
+language = markdown
+column = 20
+-- input
+---
+title: alpha beta gamma delta epsilon
+---
+text
+-- output
+---
+title: alpha beta gamma delta epsilon
+---
+text
+[case]
+name = an indented code block is frozen
+language = markdown
+column = 20
+-- input
+    alpha beta gamma delta epsilon
+-- output
+    alpha beta gamma delta epsilon
+[case]
+name = two trailing spaces keep their break
+language = markdown
+column = 20
+-- input
+alpha beta  
+gamma delta epsilon zeta eta
+-- output
+alpha beta  
+gamma delta epsilon
+zeta eta

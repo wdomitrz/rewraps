@@ -1,0 +1,17 @@
+{
+  "$schema": "./schema.json",
+  "name": "Dockerfile",
+  "id": "dockerfile",
+  "ext": [
+    "Dockerfile",
+    ".dockerfile"
+  ],
+  "notes": "Identified by file name, like Makefile.",
+  "comments": [
+    {
+      "line": "#",
+      "not_followed_by": "!",
+      "dialect": "markdown"
+    }
+  ]
+}

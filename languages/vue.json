@@ -1,0 +1,15 @@
+{
+  "$schema": "./schema.json",
+  "name": "Vue",
+  "ext": [
+    ".vue"
+  ],
+  "comments": [
+    {
+      "kind": "delimited",
+      "start": "<!--",
+      "end": "-->",
+      "dialect": "markdown"
+    }
+  ]
+}

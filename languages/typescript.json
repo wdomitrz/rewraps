@@ -1,0 +1,13 @@
+{
+  "$schema": "./schema.json",
+  "name": "TypeScript",
+  "id": "typescript",
+  "ext": [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"],
+  "notes": "JavaScript shares this entry because the comment syntax is identical; the editor reports javascriptreact/typescriptreact and those ids are listed so the table matches without a second file claiming the same extensions.",
+  "comments": [
+    { "line": "///", "dialect": "jsdoc" },
+    { "line": "//", "dialect": "markdown" },
+    { "kind": "delimited", "start": "/**", "end": "*/", "decorate": "*", "dialect": "jsdoc" },
+    { "kind": "delimited", "start": "/*", "end": "*/", "dialect": "markdown" }
+  ]
+}

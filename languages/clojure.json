@@ -1,0 +1,16 @@
+{
+  "$schema": "./schema.json",
+  "name": "Clojure",
+  "ext": [
+    ".clj",
+    ".cljs",
+    ".cljc",
+    ".edn"
+  ],
+  "comments": [
+    {
+      "line": ";",
+      "dialect": "markdown"
+    }
+  ]
+}

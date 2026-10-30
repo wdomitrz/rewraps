@@ -1,0 +1,33 @@
+# Go: godoc, where an indented line is code and must survive.
+
+[case]
+name = a godoc comment wraps
+language = go
+column = 30
+-- input
+// alpha beta gamma delta epsilon zeta
+-- output
+// alpha beta gamma delta
+// epsilon zeta
+[case]
+name = an indented code sample is never reflowed
+language = go
+column = 40
+-- input
+// Example usage:
+//
+//	alpha beta gamma delta epsilon zeta eta theta
+//	second line of code
+-- output
+// Example usage:
+//
+// 	alpha beta gamma delta epsilon zeta eta theta
+// 	second line of code
+[case]
+name = code is untouched
+language = go
+column = 20
+-- input
+func main() { println("alpha beta gamma") }
+-- output
+func main() { println("alpha beta gamma") }

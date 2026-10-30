@@ -1,0 +1,17 @@
+{
+  "$schema": "./schema.json",
+  "name": "R",
+  "ext": [
+    ".r"
+  ],
+  "comments": [
+    {
+      "line": "#'",
+      "dialect": "markdown"
+    },
+    {
+      "line": "#",
+      "dialect": "markdown"
+    }
+  ]
+}

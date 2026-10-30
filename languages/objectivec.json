@@ -1,0 +1,33 @@
+{
+  "$schema": "./schema.json",
+  "name": "Objective-C",
+  "id": "objective-c",
+  "ext": [
+    ".mm"
+  ],
+  "comments": [
+    {
+      "line": "///",
+      "dialect": "doxygen"
+    },
+    {
+      "line": "//",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "/**",
+      "end": "*/",
+      "decorate": "*",
+      "dialect": "doxygen"
+    },
+    {
+      "kind": "delimited",
+      "start": "/*",
+      "end": "*/",
+      "decorate": "*",
+      "dialect": "markdown"
+    }
+  ],
+  "notes": "`.m` is also MATLAB, so only `.mm` is claimed here; a `.m` file is identified by the editor's language id, which is the reliable answer."
+}

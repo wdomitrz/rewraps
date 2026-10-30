@@ -1,0 +1,31 @@
+{
+  "$schema": "./schema.json",
+  "name": "Java",
+  "ext": [
+    ".java"
+  ],
+  "comments": [
+    {
+      "line": "///",
+      "dialect": "javadoc"
+    },
+    {
+      "line": "//",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "/**",
+      "end": "*/",
+      "decorate": "*",
+      "dialect": "javadoc"
+    },
+    {
+      "kind": "delimited",
+      "start": "/*",
+      "end": "*/",
+      "decorate": "*",
+      "dialect": "markdown"
+    }
+  ]
+}

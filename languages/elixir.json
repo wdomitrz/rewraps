@@ -1,0 +1,15 @@
+{
+  "$schema": "./schema.json",
+  "name": "Elixir",
+  "ext": [
+    ".ex",
+    ".exs"
+  ],
+  "comments": [
+    {
+      "line": "#",
+      "not_followed_by": "!",
+      "dialect": "markdown"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "./schema.json",
+  "name": "XAML",
+  "ext": [
+    ".xaml"
+  ],
+  "comments": [
+    {
+      "kind": "delimited",
+      "start": "<!--",
+      "end": "-->",
+      "dialect": "markdown"
+    }
+  ]
+}

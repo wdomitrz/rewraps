@@ -1,0 +1,15 @@
+[package]
+name = "rewrap-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Hard word wrapping for comments and other text, at a given column."
+
+# Deliberately dependency-free. The engine is a pure function over strings, and
+# the wasm build ships it to an editor: every crate here would be paid for on
+# every keystroke and in the download size.
+[dependencies]
+
+[build-dependencies]
+serde_json = "1"

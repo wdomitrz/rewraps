@@ -1,0 +1,17 @@
+{
+  "$schema": "./schema.json",
+  "name": "XML",
+  "ext": [
+    ".xml",
+    ".xsl",
+    ".xsd"
+  ],
+  "comments": [
+    {
+      "kind": "delimited",
+      "start": "<!--",
+      "end": "-->",
+      "dialect": "markdown"
+    }
+  ]
+}

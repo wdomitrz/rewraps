@@ -1,0 +1,39 @@
+# OCaml: block comments only, and they nest.
+
+[case]
+name = a block comment wraps
+language = ocaml
+column = 30
+-- input
+(* alpha beta gamma delta epsilon zeta *)
+-- output
+(* alpha beta gamma delta
+ epsilon zeta *)
+[case]
+name = a doc comment takes the decoration character
+language = ocaml
+column = 30
+-- input
+(** alpha beta gamma delta epsilon zeta *)
+-- output
+(** alpha beta gamma delta
+ * epsilon zeta *)
+[case]
+name = nested comments are matched by depth
+language = ocaml
+column = 50
+-- input
+(* outer (* inner *) still outer text here *)
+-- output
+(* outer (* inner *) still outer text here *)
+[case]
+name = code between comments is untouched
+language = ocaml
+column = 30
+-- input
+(* alpha beta gamma delta epsilon zeta *)
+let f x = x
+-- output
+(* alpha beta gamma delta
+ epsilon zeta *)
+let f x = x

@@ -1,0 +1,14 @@
+{
+  "$schema": "./schema.json",
+  "name": "TOML",
+  "ext": [
+    ".toml"
+  ],
+  "comments": [
+    {
+      "line": "#",
+      "not_followed_by": "!",
+      "dialect": "markdown"
+    }
+  ]
+}

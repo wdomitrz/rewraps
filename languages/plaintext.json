@@ -1,0 +1,8 @@
+{
+  "$schema": "./schema.json",
+  "name": "PlainText",
+  "id": "plaintext",
+  "ext": [".txt", ".text"],
+  "document": "plaintext",
+  "notes": "Paragraphs are separated by blank lines only. This is also the fallback for a file whose language is unknown, which is why it must accept anything without ever damaging a line it does not understand."
+}

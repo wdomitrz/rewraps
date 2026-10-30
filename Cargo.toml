@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/rewrap-core",
+    "crates/rewrap-cli",
+    "crates/rewrap-wasm",
+    "crates/xtask",
+]
+
+[workspace.package]
+version = "0.3.1"
+edition = "2021"
+license = "AGPL-3.0-only"
+repository = "https://github.com/wdomitrz/rewraps"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"

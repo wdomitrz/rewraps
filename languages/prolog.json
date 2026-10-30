@@ -1,0 +1,13 @@
+{
+  "$schema": "./schema.json",
+  "name": "Prolog",
+  "ext": [
+    ".pro"
+  ],
+  "comments": [
+    {
+      "line": "%",
+      "dialect": "markdown"
+    }
+  ]
+}

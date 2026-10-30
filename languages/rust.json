@@ -1,0 +1,39 @@
+{
+  "$schema": "./schema.json",
+  "name": "Rust",
+  "id": "rust",
+  "ext": [
+    ".rs"
+  ],
+  "notes": "Block comments nest, so the scanner needs a depth counter rather than a closing-marker search. `/**` is the doc marker; `/*` is not, and both must be present because a plain block comment is still prose.",
+  "comments": [
+    {
+      "line": "///",
+      "dialect": "rustdoc"
+    },
+    {
+      "line": "//!",
+      "dialect": "rustdoc"
+    },
+    {
+      "line": "//",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "/**",
+      "end": "*/",
+      "nesting": true,
+      "decorate": "*",
+      "dialect": "rustdoc"
+    },
+    {
+      "kind": "delimited",
+      "start": "/*",
+      "end": "*/",
+      "nesting": true,
+      "dialect": "markdown",
+      "decorate": "*"
+    }
+  ]
+}

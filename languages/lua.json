@@ -1,0 +1,19 @@
+{
+  "$schema": "./schema.json",
+  "name": "Lua",
+  "ext": [
+    ".lua"
+  ],
+  "comments": [
+    {
+      "line": "--",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "--[[",
+      "end": "]]",
+      "dialect": "markdown"
+    }
+  ]
+}

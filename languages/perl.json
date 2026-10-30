@@ -1,0 +1,14 @@
+{
+  "$schema": "./schema.json",
+  "name": "Perl",
+  "ext": [
+    ".pl",
+    ".pm"
+  ],
+  "comments": [
+    {
+      "line": "#",
+      "dialect": "markdown"
+    }
+  ]
+}

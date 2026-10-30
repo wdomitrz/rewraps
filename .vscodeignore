@@ -1,0 +1,19 @@
+# Only the built extension and the engine it loads are shipped.
+crates/**
+languages/**
+target/**
+src/**
+scripts/**
+tests/**
+target/**
+Cargo.toml
+Cargo.lock
+Makefile
+*.vsix
+.github/**
+.gitignore
+tsconfig.json
+**/*.map
+wasm-bindgen-*
+*.tar.gz
+*.sha256sum

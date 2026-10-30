@@ -1,0 +1,85 @@
+# Rust: line comments, doc comments, nested block comments.
+
+[case]
+name = a line comment wraps and repeats its marker
+language = rust
+column = 30
+-- input
+// alpha beta gamma delta epsilon zeta
+-- output
+// alpha beta gamma delta
+// epsilon zeta
+[case]
+name = a doc comment is its own marker
+language = rust
+column = 30
+-- input
+/// alpha beta gamma delta epsilon zeta
+-- output
+/// alpha beta gamma delta
+/// epsilon zeta
+[case]
+name = code after a comment is untouched
+language = rust
+column = 30
+-- input
+// alpha beta gamma delta epsilon zeta
+fn main() { let alpha = beta_gamma_delta_epsilon; }
+-- output
+// alpha beta gamma delta
+// epsilon zeta
+fn main() { let alpha = beta_gamma_delta_epsilon; }
+[case]
+name = a block comment continues with the decoration character
+language = rust
+column = 30
+-- input
+/* alpha beta gamma delta epsilon zeta */
+-- output
+/* alpha beta gamma delta
+ * epsilon zeta */
+[case]
+name = a multi-line block comment keeps its body marker
+language = rust
+column = 30
+-- input
+/*
+ * alpha beta gamma delta epsilon zeta
+ */
+-- output
+/*
+ * alpha beta gamma delta
+ * epsilon zeta
+ */
+[case]
+name = nesting is counted so the comment ends where it ends
+language = rust
+column = 40
+-- input
+/* outer /* inner */ still outer */
+-- output
+/* outer /* inner */ still outer */
+[case]
+name = an indented comment block is separate
+language = rust
+column = 30
+-- input
+fn f() {
+    // alpha beta gamma delta epsilon zeta
+    let a = 1;
+}
+-- output
+fn f() {
+    // alpha beta gamma delta
+    // epsilon zeta
+    let a = 1;
+}
+[case]
+name = a shebang-like doc marker is not a comment
+language = rust
+column = 30
+-- input
+//! module docs go here and are quite long indeed
+-- output
+//! module docs go here and
+//! are quite long indeed

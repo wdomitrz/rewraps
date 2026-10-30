@@ -1,0 +1,11 @@
+{
+  "$schema": "./schema.json",
+  "name": "OCaml",
+  "id": "ocaml",
+  "ext": [".ml", ".mli"],
+  "notes": "Block comments nest, and `(**` is the documentation marker. There is no line comment at all, which is why an ordinary `(* plain *)` and a doc comment must be told apart by marker length.",
+  "comments": [
+    { "kind": "delimited", "start": "(**", "end": "*)", "nesting": true, "decorate": "*", "dialect": "markdown" },
+    { "kind": "delimited", "start": "(*", "end": "*)", "nesting": true, "dialect": "markdown" }
+  ]
+}

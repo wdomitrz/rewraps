@@ -1,0 +1,41 @@
+# C: line comments, block comments, doxygen markers.
+
+[case]
+name = a line comment wraps
+language = c
+column = 30
+-- input
+// alpha beta gamma delta epsilon zeta
+-- output
+// alpha beta gamma delta
+// epsilon zeta
+[case]
+name = a doxygen block keeps the star column
+language = c
+column = 30
+-- input
+/**
+ * alpha beta gamma delta epsilon zeta
+ */
+-- output
+/**
+ * alpha beta gamma delta
+ * epsilon zeta
+ */
+[case]
+name = a plain block comment wraps
+language = c
+column = 30
+-- input
+/* alpha beta gamma delta epsilon zeta */
+-- output
+/* alpha beta gamma delta
+ * epsilon zeta */
+[case]
+name = a preprocessor line is untouched
+language = c
+column = 20
+-- input
+#define ALPHA beta_gamma_delta_epsilon
+-- output
+#define ALPHA beta_gamma_delta_epsilon

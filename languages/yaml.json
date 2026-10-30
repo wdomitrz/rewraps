@@ -1,0 +1,16 @@
+{
+  "$schema": "./schema.json",
+  "name": "YAML",
+  "id": "yaml",
+  "ext": [
+    ".yaml",
+    ".yml"
+  ],
+  "comments": [
+    {
+      "line": "#",
+      "not_followed_by": "!",
+      "dialect": "markdown"
+    }
+  ]
+}

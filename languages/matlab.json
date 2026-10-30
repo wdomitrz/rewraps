@@ -1,0 +1,20 @@
+{
+  "$schema": "./schema.json",
+  "name": "MATLAB",
+  "id": "matlab",
+  "ext": [
+    ".m"
+  ],
+  "comments": [
+    {
+      "line": "%",
+      "dialect": "markdown"
+    },
+    {
+      "kind": "delimited",
+      "start": "%{",
+      "end": "%}",
+      "dialect": "markdown"
+    }
+  ]
+}

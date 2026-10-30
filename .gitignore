@@ -1,0 +1,8 @@
+# Build output. Nothing generated is ever committed: the wasm and the bundle are
+# produced by the build, on this machine and in CI, from the sources here.
+/target
+/dist
+/out
+/node_modules
+*.vsix
+/src/pkg
