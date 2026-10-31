@@ -187,6 +187,58 @@ fn interrupts_paragraph(text: &str) -> bool {
         || rest.starts_with('>')
 }
 
+/// Whether this line would start a block of its own in a Markdown document.
+///
+/// Used on comment bodies, where the answer decides *not* to re-flow: a fenced
+/// sample, a table, an indented code line are things the author wrote on purpose.
+pub(crate) fn starts_a_block(text: &str) -> bool {
+    let trimmed = text.trim_start();
+    fence(text).is_some()
+        || is_atx_heading(trimmed)
+        || is_thematic_break(trimmed)
+        || is_indented_code(text)
+        || html_block(text).is_some()
+        || is_table_delimiter_row(text)
+}
+
+/// Whether this line opens a block that must be emitted as written.
+///
+/// A fence is one; so is a heading, a table row, an indented code line. A
+/// thematic break and an HTML opener are *not* included here: inside a comment a
+/// `---` is usually a rule line in prose, and freezing every subsequent line
+/// after one would stop wrapping the rest of the comment.
+pub(crate) fn opens_a_block(text: &str) -> bool {
+    let trimmed = text.trim_start();
+    fence(text).is_some()
+        || is_atx_heading(trimmed)
+        || is_indented_code(text)
+        || is_table_delimiter_row(text)
+        // Only a line that is *just* markup. A doc comment's `<summary> What the
+        // method does` is prose with a tag in front of it, and freezing it would
+        // stop wrapping half of every XMLDoc comment.
+        || is_markup_only(text)
+}
+
+/// Whether a line is nothing but an HTML or XML tag, or a comment opener.
+pub(crate) fn is_markup_only(text: &str) -> bool {
+    let trimmed = text.trim();
+    if !trimmed.starts_with('<') {
+        return false;
+    }
+    // `<tag ...>` or `</tag>` or `<!-- ... -->`, with nothing after it but the
+    // tag's own text when it opens a block.
+    let closes = trimmed.ends_with('>');
+    let has_text_after = trimmed
+        .find('>')
+        .is_some_and(|end| !trimmed[end + 1..].trim().is_empty());
+    closes && (!has_text_after || trimmed.starts_with("<!--") || trimmed.starts_with("<!"))
+}
+
+/// The fence marker a line opens, if it opens one.
+pub(crate) fn fence_of(text: &str) -> Option<(char, usize)> {
+    fence(text)
+}
+
 /// Strip `>` quote markers, returning how many there were.
 pub(crate) fn split_quotes(text: &str) -> (usize, &str) {
     let mut count = 0;
@@ -297,7 +349,7 @@ fn is_setext_underline(text: &str) -> bool {
     matches!(first, '=' | '-') && trimmed.chars().all(|c| c == first)
 }
 
-fn is_indented_code(text: &str) -> bool {
+pub(crate) fn is_indented_code(text: &str) -> bool {
     let (_, rest) = split_quotes(text);
     rest.starts_with("    ") || rest.starts_with('\t')
 }

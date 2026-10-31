@@ -171,7 +171,12 @@ pub fn rewrap(file: &File, settings: &Settings, selections: &[Selection], lines:
     let (start, end) = if start + 1 == end {
         expand(file, lines, start)
     } else {
-        (start, end)
+        // A selection inside a block comment or a docstring starts on a line
+        // with no marker of its own, so on its own it is indistinguishable from
+        // code and would be left alone. Grow it to the comment that contains it;
+        // a selection of complete comment lines is already wrap-able and is left
+        // exactly as chosen.
+        widen_inside_comment(file, lines, start, end)
     };
     let region_lines = &lines[start..end];
     let chunks = match resolve(file) {
@@ -185,6 +190,27 @@ pub fn rewrap(file: &File, settings: &Settings, selections: &[Selection], lines:
 /// Lines that carry no prefix.
 fn plain(lines: &[&str]) -> Vec<Line> {
     lines.iter().map(|line| Line::new("", *line)).collect()
+}
+
+/// Grow a selection that begins inside a comment to that comment's boundaries.
+///
+/// Only when the first selected line does not itself begin a comment: a
+/// selection of complete `//` lines, or one that starts at a `/*` or `"""`, is
+/// already something the parser can read, and widening it would wrap lines the
+/// user did not select.
+fn widen_inside_comment(file: &File, lines: &[&str], start: usize, end: usize) -> (usize, usize) {
+    let Some(language) = resolve(file) else {
+        return (start, end);
+    };
+    if language.is_document() || comment::opener_of(language, lines[start]).is_some() {
+        return (start, end);
+    }
+    match comment_block(language, lines, start) {
+        // The block must actually contain the selection; a line outside any
+        // comment stays where it is.
+        Some((first, last)) if first <= start && end - 1 <= last => (first, last + 1),
+        _ => (start, end),
+    }
 }
 
 /// Grow a single-line region to the block that line belongs to.
@@ -212,48 +238,134 @@ fn expand(file: &File, lines: &[&str], at: usize) -> (usize, usize) {
 }
 
 /// The comment containing line `at`, if any.
+///
+/// A comment is a *block*, and the block is what gets wrapped. Wrapping the line
+/// under the cursor instead loses everything the block encodes: a hanging indent
+/// (`#    text`), the star column of a block comment, the alignment of a
+/// run-on comment. So the run is found by shape, not by "is this line a comment
+/// line":
+///
+/// * a run of the **same marker** -- `//`, `#`, `///` -- at the same indent is
+///   one comment, whatever its indents below the marker;
+/// * a block comment is the lines from its opening marker to its closing one,
+///   found by counting, because they nest in Rust and OCaml.
 fn comment_block(language: &'static Language, lines: &[&str], at: usize) -> Option<(usize, usize)> {
-    let indent = crate::markdown::leading_whitespace(lines[at]);
-    let rest = &lines[at][indent.len()..];
+    let line = lines[at];
+    let indent = crate::markdown::leading_whitespace(line);
+    let rest = &line[indent.len()..];
+
+    // A line that opens a comment: the run starts here.
+    if let Some(comment) = opener_marker(language, rest) {
+        return Some(match comment.kind {
+            Kind::Line => line_run(lines, at, &indent, comment.start),
+            _ => delimited_block(lines, at, comment),
+        });
+    }
+
+    // A continuation line: ` * text` inside a block comment, or the closing
+    // line. Find the block that is still open here.
+    if let Some(comment) = comment::open_at(language, lines, at) {
+        return Some(delimited_block(lines, at, comment));
+    }
+
+    // A run-on comment: a line with no marker of its own, indented no further
+    // than the marker, continues the run above it. That is the shape a comment
+    // takes once a wrap has moved a word onto a line without a marker.
+    let previous = lines.get(at.checked_sub(1)?)?;
+    let previous_indent = crate::markdown::leading_whitespace(previous);
+    let marker = opener_marker(language, &previous[previous_indent.len()..])?;
+    if marker.kind == Kind::Line && indent.len() <= previous_indent.len() {
+        return Some(line_run(lines, at, &previous_indent, marker.start));
+    }
+    None
+}
+
+fn opener_marker(language: &Language, rest: &str) -> Option<&'static Comment> {
     let mut best: Option<&'static Comment> = None;
     for comment in language.comments {
         if comment.kind == Kind::String || !rest.starts_with(comment.start) {
             continue;
         }
+        if let Some(next) = comment.not_followed_by.chars().next() {
+            if rest[comment.start.len()..].starts_with(next) {
+                continue;
+            }
+        }
         if best.is_none_or(|current| comment.start.len() > current.start.len()) {
             best = Some(comment);
         }
     }
-    let comment = best?;
-    let mut first = at;
-    let mut last = at;
-    match comment.kind {
-        Kind::Line => {
-            // A run of the same marker at the same indent is one comment.
-            while first > 0 && begins_comment(lines[first - 1], &indent, comment.start) {
-                first -= 1;
-            }
-            while last + 1 < lines.len() && begins_comment(lines[last + 1], &indent, comment.start)
-            {
-                last += 1;
-            }
-        }
-        _ => {
-            // A block comment: grow outwards to the lines holding its markers.
-            while first > 0 && !lines[first].contains(comment.start) {
-                first -= 1;
-            }
-            while last + 1 < lines.len() && !lines[last].contains(comment.end) {
-                last += 1;
-            }
-        }
-    }
-    Some((first, last))
+    best
 }
 
-fn begins_comment(line: &str, indent: &str, marker: &str) -> bool {
-    line.strip_prefix(indent)
-        .is_some_and(|rest| rest.starts_with(marker))
+/// Every line of a run of the same marker at the same indent, including run-on
+/// lines that carry no marker but are indented to the marker's own level.
+fn line_run(lines: &[&str], at: usize, indent: &str, marker: &str) -> (usize, usize) {
+    let starts = |line: &str| {
+        line.strip_prefix(indent)
+            .is_some_and(|rest| rest.starts_with(marker))
+    };
+    // A line with no marker that is not indented past the marker's own level
+    // continues the paragraph above it.
+    let continues =
+        |line: &str| starts(line) || (!line.trim().is_empty() && !line.starts_with(' '));
+
+    let mut first = at;
+    while first > 0 && continues(lines[first - 1]) {
+        first -= 1;
+    }
+    let mut last = at;
+    while last + 1 < lines.len() && continues(lines[last + 1]) {
+        last += 1;
+    }
+    // Never swallow code above: a run may not start on a line that is not part
+    // of it.
+    while first < at && !starts(lines[first]) {
+        first += 1;
+    }
+    (first, last)
+}
+
+/// Every line from a block comment's opening marker to its closing one.
+fn delimited_block(lines: &[&str], at: usize, comment: &'static Comment) -> (usize, usize) {
+    let mut first = at;
+    let mut depth = 0usize;
+    // Walk up until a line leaves the comment open before it.
+    while first > 0 {
+        let previous = lines[first - 1];
+        let (opens, closes) = count_markers(previous, comment, comment.nesting);
+        depth = depth.saturating_add(opens).saturating_sub(closes);
+        first -= 1;
+        if depth > 0 {
+            break;
+        }
+    }
+    let mut last = at;
+    while last + 1 < lines.len() && !lines[last].contains(comment.end) {
+        last += 1;
+    }
+    (first, last)
+}
+
+fn count_markers(text: &str, comment: &Comment, nesting: bool) -> (usize, usize) {
+    let mut opens = 0usize;
+    let mut closes = 0usize;
+    let mut position = 0usize;
+    while position < text.len() {
+        let rest = &text[position..];
+        if nesting && rest.starts_with(comment.start) {
+            opens += 1;
+            position += comment.start.len();
+            continue;
+        }
+        if rest.starts_with(comment.end) {
+            closes += 1;
+            position += comment.end.len();
+            continue;
+        }
+        position += rest.chars().next().map_or(1, char::len_utf8);
+    }
+    (opens, closes)
 }
 
 /// The blank-line-delimited paragraph containing `at`.
@@ -381,25 +493,136 @@ pub fn maybe_auto_wrap(
     if at.line >= lines.len() {
         return Edit::empty();
     }
-    let line = lines[at.line];
-    // The document already contains the insertion, so the cursor sits at the
-    // end of what was typed.
     let typed_end = if newline {
         at.character
     } else {
         at.character + inserted.chars().count()
     };
-    let head: String = line.chars().take(typed_end).collect();
+    let head: String = lines[at.line].chars().take(typed_end).collect();
     if settings.width(0, &head) <= column {
         return Edit::empty();
     }
 
-    // A comment that is complete on this line, or a prose line, is wrapped in
-    // place: the text is re-flowed and the markers put back, which is what lets
-    // the cursor be tracked through the break. That covers the cases people
-    // actually type in -- `// ...`, `/// ...`, `/** ... */` -- including the
-    // decorated continuation of a block comment. A docstring or a line of code
-    // falls back, below.
+    // The whole comment, not the line under the cursor. Re-flowing one line
+    // invents its continuation prefix from the line itself, which loses a
+    // hanging indent (`#    text` becoming `# text`) and silently changes the
+    // shape of a block. Wrapping the block lets the content processor keep the
+    // shape it was already preserving.
+    let (start, end) = expand(file, lines, at.line);
+    if start + 1 == end {
+        // One line: a line comment, a comment that opens and closes on the line,
+        // or a line of code. The single-line path can track the cursor exactly.
+        return single_line_auto_wrap(file, settings, lines, at, newline, inserted, typed_end);
+    }
+
+    // Count the text characters up to the cursor, so the position can be found
+    // again in the output. Markers are skipped: they are not text, and a wrap
+    // repeats them.
+    let language = resolve(file);
+    let offset = |line: &str| match language {
+        Some(language) if !language.is_document() => comment::content_offset(language, line),
+        _ => line.len() - line.trim_start().len(),
+    };
+    let mut seen = 0usize;
+    for (index, line) in lines.iter().enumerate().take(at.line + 1).skip(start) {
+        let from = offset(line);
+        let to = if index == at.line {
+            typed_end.min(line.len())
+        } else {
+            line.len()
+        };
+        seen += line[from.min(to)..to]
+            .chars()
+            .filter(|c| !c.is_whitespace())
+            .count();
+    }
+
+    let selection = Selection {
+        anchor: Position {
+            line: start,
+            character: 0,
+        },
+        active: Position {
+            line: end - 1,
+            character: lines[end - 1].chars().count(),
+        },
+    };
+    let mut edit = rewrap(file, settings, &[selection], lines);
+    if edit.is_empty() {
+        return Edit::empty();
+    }
+
+    // The space that triggered the wrap is kept when it was typed at the end of
+    // the text: it separates the next word, and dropping it welds the next
+    // keystroke onto the current one.
+    // What matters is that the space was typed at the end of the line's *text*,
+    // not that the line is the last of the region: a docstring's region ends at
+    // its closing quotes, one line below the text being typed.
+    let typed_line = lines[at.line];
+    let typed_at_end = !newline
+        && typed_end >= typed_line.trim_end().chars().count()
+        && typed_line[..typed_end.min(typed_line.len())].ends_with(' ');
+    // The space goes on the last line of *text*: for a docstring that is the line
+    // above its closing quotes, not the quotes themselves. For a block comment
+    // that closed on the typed line it is that line, and there the space would be
+    // trailing whitespace on a finished comment, so it is dropped.
+    let mut space_at: Option<usize> = None;
+    if typed_at_end {
+        if let Some(index) = edit
+            .lines
+            .iter()
+            .rposition(|line| !line.trim().is_empty() && !is_closing_only(file, line))
+        {
+            let line = &mut edit.lines[index];
+            if ends_with_closing_marker(file, line) {
+                // Nothing to add, and nothing to point at.
+            } else {
+                if !line.ends_with(' ') {
+                    line.push(' ');
+                }
+                space_at = Some(index);
+            }
+        }
+    }
+
+    let position = if newline {
+        Position {
+            line: at.line + edit.lines.len(),
+            character: inserted.chars().skip(1).take_while(|c| *c == ' ').count(),
+        }
+    } else if let Some(index) = space_at {
+        Position {
+            line: start + index,
+            character: edit.lines[index].chars().count(),
+        }
+    } else {
+        let found = find_text_position(language, &edit.lines, start, seen);
+        Position {
+            line: found.0,
+            character: found.1,
+        }
+    };
+    edit.selections = Some(vec![Selection {
+        anchor: position,
+        active: position,
+    }]);
+    edit
+}
+
+/// Auto-wrap when the typed line is the whole region.
+///
+/// The text is taken to be everything after the marker and the prefix put back
+/// on every line, which lets the cursor be tracked precisely through the break.
+fn single_line_auto_wrap(
+    file: &File,
+    settings: &Settings,
+    lines: &[&str],
+    at: Position,
+    newline: bool,
+    inserted: &str,
+    typed_end: usize,
+) -> Edit {
+    let line = lines[at.line];
     let parts = resolve(file).and_then(|language| {
         if language.is_document() {
             Some(comment::LineParts {
@@ -410,7 +633,7 @@ pub fn maybe_auto_wrap(
                 suffix: String::new(),
             })
         } else {
-            comment::single_line_parts(language, line)
+            comment::parts_for(language, lines, at.line)
         }
     });
 
@@ -418,6 +641,7 @@ pub fn maybe_auto_wrap(
         return fallback_auto_wrap(file, settings, lines, at, newline, inserted);
     };
 
+    let column = settings.effective_column();
     let cursor = typed_end.saturating_sub(line[..parts.content_start].chars().count());
     let (mut out, position) = settings.fill_tracked(
         &line[parts.content_start..parts.content_end],
@@ -426,6 +650,17 @@ pub fn maybe_auto_wrap(
         column,
         Some(cursor),
     );
+    // The space that triggered the wrap is kept when it was typed at the end of
+    // the text: dropping it welds the next keystroke onto the last word.
+    let keep_space = !newline
+        && typed_end >= parts.content_end
+        && parts.suffix.is_empty()
+        && line[..parts.content_end].ends_with(' ');
+    if keep_space {
+        if let Some(last) = out.last_mut() {
+            last.push(' ');
+        }
+    }
     if !parts.suffix.is_empty() {
         if let Some(last) = out.last_mut() {
             last.push_str(&parts.suffix);
@@ -434,13 +669,78 @@ pub fn maybe_auto_wrap(
     if out.len() == 1 && out[0] == line {
         return Edit::empty();
     }
-    let position = cursor_after(&out, at.line, position, newline, inserted);
+    let position = if keep_space {
+        Position {
+            line: at.line + out.len().saturating_sub(1),
+            character: out.last().map_or(0, |line| line.chars().count()),
+        }
+    } else {
+        cursor_after(&out, at.line, position, newline, inserted)
+    };
     let mut edit = Edit::replace(at.line, at.line + 1, out);
     edit.selections = Some(vec![Selection {
         anchor: position,
         active: position,
     }]);
     edit
+}
+
+/// The line and column of the `wanted`-th text character of `out`.
+///
+/// Same counting as the input side: skip each line's marker, count non-space
+/// characters, stop just after the one the cursor was behind.
+fn find_text_position(
+    language: Option<&'static Language>,
+    out: &[String],
+    start: usize,
+    wanted: usize,
+) -> (usize, usize) {
+    if wanted == 0 {
+        return (start, 0);
+    }
+    let mut seen = 0usize;
+    for (index, line) in out.iter().enumerate() {
+        let from = match language {
+            Some(language) if !language.is_document() => comment::content_offset(language, line),
+            _ => line.len() - line.trim_start().len(),
+        };
+        for (at, character) in line.char_indices() {
+            if at < from || character.is_whitespace() {
+                continue;
+            }
+            seen += 1;
+            if seen == wanted {
+                return (start + index, at + character.len_utf8());
+            }
+        }
+    }
+    let last = out.len().saturating_sub(1);
+    (
+        start + last,
+        out.get(last).map_or(0, |line| line.chars().count()),
+    )
+}
+
+/// Whether this output line is nothing but a comment's closing marker.
+fn is_closing_only(file: &File, line: &str) -> bool {
+    let trimmed = line.trim();
+    resolve(file).is_some_and(|language| {
+        language
+            .comments
+            .iter()
+            .any(|comment| !comment.end.is_empty() && trimmed == comment.end)
+    })
+}
+
+/// Whether this output line already ends with a comment's closing marker.
+fn ends_with_closing_marker(file: &File, line: &str) -> bool {
+    let trimmed = line.trim_end();
+    resolve(file).is_some_and(|language| {
+        language
+            .comments
+            .iter()
+            .any(|comment| !comment.end.is_empty() && trimmed.ends_with(comment.end))
+    })
 }
 
 /// Where the cursor goes once the line has been wrapped.

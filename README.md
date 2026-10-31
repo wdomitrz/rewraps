@@ -147,6 +147,23 @@ make check   # fmt, clippy, cargo test, wasm build, npm test
 make vsix    # build the extension package
 ```
 
+### Checking the engine against a real corpus
+
+`scripts/invariants.py` sweeps a large corpus of wrapping samples through the CLI
+and checks the four properties that are never a matter of taste: it does not
+crash, no word is lost or invented, wrapping twice is wrapping once, and no line
+is over the column unless it holds one unbreakable word. `scripts/oracle.py`
+additionally scores the line breaks against the same corpus.
+
+The corpus is Rewrap's published specification, cloned at run time into a
+temporary directory — none of it is stored here:
+
+```sh
+git clone --depth 1 -b prerelease https://github.com/stkb/Rewrap /tmp/rewrap-specs
+cargo build --release -p rewrap-cli
+python3 scripts/invariants.py
+```
+
 Nothing generated is committed: the wasm module and the bundled extension are
 produced by the build, here and in CI.
 

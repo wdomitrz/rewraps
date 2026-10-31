@@ -61,6 +61,56 @@ function selectionArray (selections: readonly vscode.Selection[]): number[] {
   return flat
 }
 
+/** Set while this extension's own edit is being applied.
+ *
+ * The edit fires `onDidChangeTextDocument`, which is the same event that drives
+ * auto-wrap: without this, applying a wrap re-enters the handler and can issue a
+ * second edit against a document that is mid-change.
+ */
+let applying = false
+
+/** Apply an edit and put the cursor where the engine said, as one operation.
+ *
+ * Two things make this atomic from the user's point of view:
+ *
+ * * the selection is set in the same turn as the edit result, with nothing
+ *   awaited in between, so no other event can land between the text changing and
+ *   the cursor moving;
+ * * auto-wrap merges its edit into the undo step of the keystroke that caused it
+ *   (`undoStopBefore: false`), so one undo takes back both the typed character
+ *   and the wrap it produced. An explicit command is its own step, because there
+ *   one undo should take back exactly the wrap.
+ *
+ * The document version is checked before applying: an edit computed from text
+ * that has since changed would replace the wrong range.
+ */
+async function applyAtomically (
+  editor: vscode.TextEditor,
+  edit: Edit,
+  version: number,
+  options: {joinPreviousUndo?: boolean} = {}): Promise<boolean>
+{
+  if (edit.isEmpty || editor.document.version !== version) return false
+  const edits = apply(editor.document, edit)
+  if (!edits.length) return false
+  const selections = edit.selections
+  applying = true
+  try {
+    const applied = await editor.edit(
+      builder => edits.forEach(e => builder.replace(e.range, e.newText)),
+      {undoStopBefore: !options.joinPreviousUndo, undoStopAfter: true})
+    if (!applied) return false
+    if (selections) {
+      // Synchronously after the edit resolves: this is the cursor move that
+      // belongs to the same operation.
+      editor.selections = [new vscode.Selection(selections[0], selections[1], selections[2], selections[3])]
+    }
+    return true
+  } finally {
+    applying = false
+  }
+}
+
 /** Turn the engine's answer into editor edits. */
 function apply (document: vscode.TextDocument, edit: Edit): vscode.TextEdit[] {
   if (edit.isEmpty) return []
@@ -116,18 +166,12 @@ function wrapCommand (context: vscode.ExtensionContext, alwaysAsk = false) {
       vscode.window.setStatusBarMessage('Rewraps: no column chosen, nothing wrapped', 4000)
       return
     }
+    const version = document.version
     const edit = rewrap(
       document.languageId, document.uri.fsPath, column,
       Number(editor.options.tabSize) || 4,
       coreLines(document), selectionArray(editor.selections)) as unknown as Edit
-    const edits = apply(document, edit)
-    if (edits.length) {
-      const applied = await editor.edit(builder => edits.forEach(e => builder.replace(e.range, e.newText)))
-      if (applied && edit.selections) {
-        const s = edit.selections
-        editor.selections = [new vscode.Selection(s[0], s[1], s[2], s[3])]
-      }
-    }
+    await applyAtomically(editor, edit, version)
   }
 }
 
@@ -187,6 +231,8 @@ export function activate (context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeTextDocument(async (event) => {
+      // Our own edit is not typing: it must not trigger another wrap.
+      if (applying) return
       const editor = vscode.window.activeTextEditor
       if (!editor || editor.document !== event.document) return
       if (!autoWrap.enabled(event.document)) return
@@ -203,22 +249,15 @@ export function activate (context: vscode.ExtensionContext): void {
       // leaving the line alone. An explicit wrap asks instead.
       const column = columnFor(event.document)
       if (column === undefined) return
+      const version = event.document.version
       const edit = maybe_auto_wrap(
         event.document.languageId, event.document.uri.fsPath, column,
         Number(editor.options.tabSize) || 4,
         change.text, change.range.start.line, change.range.start.character,
         coreLines(event.document)) as unknown as Edit
-      if (edit.isEmpty) return
-      const applied = await editor.edit(builder =>
-        apply(event.document, edit).forEach(e => builder.replace(e.range, e.newText)))
-      if (applied && edit.selections) {
-        // Applied after the edit resolves, so the position the engine computed
-        // is not shifted by the replacement itself. This is what puts the cursor
-        // after the word the wrap pushed down, instead of leaving it on the line
-        // that just got shorter.
-        const s = edit.selections
-        editor.selections = [new vscode.Selection(s[0], s[1], s[2], s[3])]
-      }
+      // Joined to the keystroke's undo step: one undo takes back the space and
+      // the wrap together, which is what the user did in one action.
+      await applyAtomically(editor, edit, version, {joinPreviousUndo: true})
     }))
 }
 

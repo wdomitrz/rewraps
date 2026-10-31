@@ -183,6 +183,7 @@ fn delimited(
     let mut depth = 0usize;
     let mut first = true;
     let mut closed_on_own_line = false;
+    let mut written_close = String::new();
     let mut closed = false;
 
     while i < lines.len() {
@@ -208,6 +209,12 @@ fn delimited(
                     segment_end = at;
                     closed = true;
                     closed_on_own_line = text[..at].trim().is_empty();
+                    if closed_on_own_line {
+                        // The closing marker is re-emitted with the indentation it
+                        // was written with: ` */` aligned under ` * ` is the
+                        // shape nearly every block comment has.
+                        written_close = format!("{}{}", &text[..at], comment.end);
+                    }
                     break;
                 }
                 depth -= 1;
@@ -230,9 +237,9 @@ fn delimited(
                     format!("{open_prefix} ")
                 }
             } else if blank {
-                body_prefix.trim_end().to_string()
+                written_prefix(text, comment).trim_end().to_string()
             } else {
-                body_prefix.clone()
+                written_prefix(text, comment)
             };
             bodies.push(Line::new(prefix, body.trim_end()));
         }
@@ -249,20 +256,60 @@ fn delimited(
         i = lines.len();
     }
 
+    // Continuation lines take the prefix the body was written with. The first
+    // body line is the one after the opening marker; with none, the language's
+    // decoration character is the best guess there is.
+    let cont_prefix = bodies
+        .iter()
+        .skip(1)
+        .map(|line| line.prefix.clone())
+        // An indentation-only prefix is meaningful -- the body is indented under
+        // the marker -- so only a truly empty one is skipped.
+        .find(|prefix| !prefix.is_empty())
+        .unwrap_or_else(|| body_prefix.clone());
     let mut chunks = crate::dialects::parse_body(comment.dialect, settings, &bodies);
     for chunk in &mut chunks {
         if let Chunk::Para(para) = chunk {
-            para.cont.clone_from(&body_prefix);
+            para.cont.clone_from(&cont_prefix);
         }
     }
     if closed {
         if closed_on_own_line {
-            chunks.push(Chunk::Verbatim(vec![close_prefix]));
+            let close = if written_close.is_empty() {
+                close_prefix
+            } else {
+                written_close
+            };
+            chunks.push(Chunk::Verbatim(vec![close]));
         } else {
             chunks.push(Chunk::Suffix(format!(" {}", comment.end)));
         }
     }
     (chunks, i)
+}
+
+/// The prefix a body line was written with.
+///
+/// Taken from the line itself -- its indentation plus a decoration character if
+/// it has one -- rather than invented from the language's table. A block comment
+/// written `/* ... */` with no stars on its body lines must stay that way, and
+/// one written with ` * ` must keep them; the table only says what is *allowed*.
+fn written_prefix(text: &str, comment: &Comment) -> String {
+    let leading = crate::markdown::leading_whitespace(text);
+    let rest = &text[leading.len()..];
+    // A single decoration character followed by whitespace, or alone: that is a
+    // body prefix. `**bold**` is not -- there the character is content.
+    let decorate = if comment.decorate.is_empty() {
+        "*".to_string()
+    } else {
+        comment.decorate.to_string()
+    };
+    if let Some(after) = rest.strip_prefix(decorate.as_str()) {
+        if after.is_empty() || after.starts_with([' ', '\t']) {
+            return format!("{leading}{decorate} ");
+        }
+    }
+    leading.to_string()
 }
 
 /// Remove a body line's decoration character, if it has one.
@@ -272,16 +319,22 @@ fn delimited(
 /// character the author wrote.
 fn strip_decoration(segment: &str, decorate: &str) -> String {
     let trimmed = segment.trim_start();
-    if decorate.is_empty() {
-        return trimmed.to_string();
-    }
+    // The star is the conventional body marker even where the table does not
+    // name it: `/*` and `/**` bodies are written ` * text` in nearly every
+    // codebase, and leaving the star in the text would double it on every wrap.
+    let decorate = if decorate.is_empty() { "*" } else { decorate };
     let Some(rest) = trimmed.strip_prefix(decorate) else {
         return trimmed.to_string();
     };
+    // Only when the character stands alone or is followed by a space: `**bold**`
+    // is content, and stripping it would delete a character the author wrote.
     if rest.is_empty() {
         return String::new();
     }
-    rest.strip_prefix(' ').unwrap_or(rest).to_string()
+    if let Some(after) = rest.strip_prefix(' ') {
+        return after.to_string();
+    }
+    trimmed.to_string()
 }
 
 /// A string used as documentation (Python's triple quotes).
@@ -333,16 +386,18 @@ fn string_block(
         return Some((chunks, start + 1));
     }
 
-    let mut bodies = vec![Line::new(head.to_string(), after_open.trim_end())];
+    // Every body line keeps its own indentation, measured from the string's
+    // indent: a docstring's literal block and its doctests are indent-sensitive,
+    // and trimming here would turn the first into prose and lose the shared
+    // indent the second is written with.
+    let first_line = Line::new(String::new(), after_open);
+    let mut bodies = vec![first_line];
     let mut i = start + 1;
     let mut closed = false;
     while i < lines.len() {
         let line = lines[i];
         let relative = line.strip_prefix(indent.as_str()).unwrap_or(line);
         if let Some(close) = relative.find(comment.end) {
-            // A closing quote alone on its line ends the body; pushing the
-            // empty line it left behind would put a blank line inside the
-            // string, which changes its value and its documentation output.
             if !relative[..close].trim().is_empty() {
                 bodies.push(Line::new(String::new(), &relative[..close]));
             }
@@ -350,7 +405,7 @@ fn string_block(
             i += 1;
             break;
         }
-        bodies.push(Line::new(String::new(), relative.trim_end()));
+        bodies.push(Line::new(String::new(), relative));
         i += 1;
     }
     if !closed {
@@ -358,31 +413,42 @@ fn string_block(
         // than guessing where the author meant it to end.
         return None;
     }
-    let mut chunks = crate::dialects::parse_body(comment.dialect, settings, &bodies);
-    // The first block continues after the opening quotes on the same line; every
-    // later line lines up under the string's own indentation.
-    let mut seen_para = false;
-    for chunk in &mut chunks {
-        match chunk {
-            Chunk::Para(para) => {
-                if seen_para {
-                    para.first.clone_from(&indent);
-                }
-                seen_para = true;
-                para.cont.clone_from(&indent);
-            }
-            Chunk::Verbatim(lines) => {
-                for line in lines.iter_mut() {
-                    if !line.trim().is_empty() {
-                        line.insert_str(0, &indent);
-                    }
-                }
-            }
-            Chunk::Suffix(_) => {}
-        }
+
+    // Line 0 continues after the opening quotes; the rest are re-emitted under
+    // the string's own indent, so the body keeps the column it was written at.
+    let mut prefixed: Vec<Line> = Vec::with_capacity(bodies.len());
+    for (index, line) in bodies.into_iter().enumerate() {
+        // The first body line starts after the opening quotes, so it carries
+        // `head`; every later one carries the string's own indent. Either way
+        // the body's own leading whitespace is kept, which is what a literal
+        // block and a doctest are indented by.
+        let base = if index == 0 {
+            head.to_string()
+        } else {
+            indent.clone()
+        };
+        // The line's own indentation stays in its text, not in its prefix: it is
+        // what tells the paragraph where a hanging indent is, and a prefix that
+        // carries it cannot be measured against the string's own indent.
+        prefixed.push(Line::new(base, line.text));
+    }
+    let mut chunks = crate::dialects::parse_body(comment.dialect, settings, &prefixed);
+    // The opening quotes are the string's delimiter, not a marker that repeats:
+    // a continuation prefix derived from that line would put `"""` in the middle
+    // of a sentence. Continuation lines line up with the string's own indent.
+    if let Some(Chunk::Para(para)) = chunks.iter_mut().find(|chunk| {
+        matches!(chunk, Chunk::Para(para) if para.first.trim_end().ends_with(comment.start))
+    }) {
+        para.cont.clone_from(&indent);
     }
     chunks.push(Chunk::Verbatim(vec![format!("{indent}{}", comment.end)]));
     Some((chunks, i))
+}
+
+/// The comment whose marker begins this text, if any.
+pub(crate) fn opener_of(language: &Language, line: &str) -> Option<&'static Comment> {
+    let indent = crate::markdown::leading_whitespace(line);
+    marker_at(language, &line[indent.len()..])
 }
 
 /// How one line of a comment splits into marker, text and closing marker.
@@ -405,15 +471,60 @@ pub(crate) struct LineParts {
     pub suffix: String,
 }
 
-/// Split one line of a comment, if this line begins a comment that is complete
-/// on that line (or is a plain line comment).
+/// Split the line at `at` into the parts auto-wrap needs.
 ///
-/// A block comment that continues past this line is deliberately not handled:
-/// its text belongs to several source lines, and choosing which of them the
-/// cursor is in needs the whole block, not the line.
-pub(crate) fn single_line_parts(language: &Language, line: &str) -> Option<LineParts> {
+/// Three shapes, because a comment being typed in is not always complete on one
+/// line:
+///
+/// * the line **begins** a comment -- `// text`, `/** text */`, or `/** text`
+///   whose body continues below;
+/// * the line is a **continuation** inside a block comment -- ` * text`, which
+///   carries no opening marker of its own and used to match nothing at all, so
+///   typing in it did nothing;
+/// * anything else, which the caller handles.
+///
+/// `None` means "not a comment line": a docstring or a line of code.
+pub(crate) fn parts_for(language: &Language, lines: &[&str], at: usize) -> Option<LineParts> {
+    let line = *lines.get(at)?;
     let indent = crate::markdown::leading_whitespace(line);
     let rest = &line[indent.len()..];
+
+    if let Some(comment) = marker_at(language, rest) {
+        return Some(opening_parts(line, &indent, rest, comment));
+    }
+
+    let comment = open_at(language, lines, at)?;
+    let body = &rest;
+    // A continuation line normally carries the decoration character
+    // (` * text`). When it does not, its own indentation is kept as the prefix
+    // and nothing is invented -- adding stars to a comment that has none would
+    // be a change nobody asked for.
+    let (content_start, cont) =
+        if !comment.decorate.is_empty() && body.starts_with(comment.decorate) {
+            let after = &body[comment.decorate.len()..];
+            let after = after.strip_prefix(' ').unwrap_or(after);
+            (
+                line.len() - after.len(),
+                format!("{indent}{} ", comment.decorate),
+            )
+        } else {
+            (indent.len(), format!("{indent} "))
+        };
+    let (content_end, suffix) = match line[content_start..].find(comment.end) {
+        Some(close) => (content_start + close, format!(" {}", comment.end)),
+        None => (line.len(), String::new()),
+    };
+    Some(LineParts {
+        content_start,
+        content_end,
+        first: line[..content_start].to_string(),
+        cont,
+        suffix,
+    })
+}
+
+/// The comment whose marker begins `rest`, longest marker first.
+fn marker_at(language: &Language, rest: &str) -> Option<&'static Comment> {
     let mut best: Option<&'static Comment> = None;
     for comment in language.comments {
         if comment.kind == Kind::String || !rest.starts_with(comment.start) {
@@ -428,7 +539,19 @@ pub(crate) fn single_line_parts(language: &Language, line: &str) -> Option<LineP
             best = Some(comment);
         }
     }
-    let comment = best?;
+    best
+}
+
+fn decoration(indent: &str, comment: &Comment) -> String {
+    if comment.decorate.is_empty() {
+        format!("{indent} ")
+    } else {
+        format!("{indent} {} ", comment.decorate)
+    }
+}
+
+/// Parts for a line whose own marker opens the comment.
+fn opening_parts(line: &str, indent: &str, rest: &str, comment: &'static Comment) -> LineParts {
     let after_start = &rest[comment.start.len()..];
     let (separated, body) = match after_start.strip_prefix(' ') {
         Some(rest) => (true, rest),
@@ -443,37 +566,127 @@ pub(crate) fn single_line_parts(language: &Language, line: &str) -> Option<LineP
     } else {
         ""
     };
-    let first_prefix = format!("{indent}{marker}{separator}");
+    let first = format!("{indent}{marker}{separator}");
+    let content_start = line.len() - body.len();
 
     match comment.kind {
-        Kind::Line => Some(LineParts {
-            content_start: line.len() - body.len(),
+        Kind::Line => LineParts {
+            content_start,
             content_end: line.len(),
-            first: first_prefix.clone(),
-            cont: first_prefix,
+            first: first.clone(),
+            cont: first,
             suffix: String::new(),
-        }),
-        _ => {
-            // A block comment that closes on this line only; the text stops
-            // before the closing marker, which is emitted separately.
-            let close = body.find(comment.end)?;
-            let cont_marker = if comment.decorate.is_empty() {
-                indent.clone()
-            } else {
-                format!("{indent} {} ", comment.decorate)
-            };
-            Some(LineParts {
-                content_start: line.len() - body.len(),
-                content_end: line.len() - body.len() + close,
-                first: first_prefix,
-                cont: cont_marker,
+        },
+        // A block comment that closes on this line, or opens on it and runs on.
+        // In the second case there is no closing marker to emit, and the lines
+        // below keep their own prefixes -- only this line is re-flowed.
+        _ => match body.find(comment.end) {
+            Some(close) => LineParts {
+                content_start,
+                content_end: content_start + close,
+                first,
+                cont: decoration(indent, comment),
                 suffix: format!(" {}", comment.end),
-            })
-        }
+            },
+            None => LineParts {
+                content_start,
+                content_end: line.len(),
+                first,
+                cont: decoration(indent, comment),
+                suffix: String::new(),
+            },
+        },
     }
 }
 
-#[cfg(test)]
+/// The block comment still open at line `at`, if the line is inside one.
+///
+/// Found by counting markers over the lines above: the last unmatched opening
+/// marker wins, and the longest marker wins a tie, so `/**` is not mistaken for
+/// `/*` in a language that has both.
+pub(crate) fn open_at(language: &Language, lines: &[&str], at: usize) -> Option<&'static Comment> {
+    let mut best: Option<(usize, &'static Comment)> = None;
+    for comment in language.comments {
+        // A delimited comment and a docstring are both blocks: they open once,
+        // they can span lines, and everything between the markers is theirs. The
+        // only difference is that a string's body is a literal, which matters to
+        // the wrapping and not to finding it. Strings used to be skipped here,
+        // which is why typing inside a docstring did nothing at all.
+        if !matches!(comment.kind, Kind::Delimited | Kind::String) {
+            continue;
+        }
+        let mut depth = 0usize;
+        let mut last_open = None;
+        for (index, line) in lines[..at].iter().enumerate() {
+            let mut position = 0usize;
+            while position < line.len() {
+                let rest = &line[position..];
+                if rest.starts_with(comment.start) {
+                    // A docstring's opening quotes and its closing quotes are the
+                    // same characters, and a one-line string opens and closes on
+                    // the same line. Counting in order handles both: the opener
+                    // is seen first, and its own closer later on the same line.
+                    depth += 1;
+                    last_open = Some(index * 10_000 + position);
+                    position += comment.start.len();
+                    continue;
+                }
+                if depth > 0 && rest.starts_with(comment.end) {
+                    depth = depth.saturating_sub(1);
+                    position += comment.end.len();
+                    continue;
+                }
+                position += rest.chars().next().map_or(1, char::len_utf8);
+            }
+        }
+        // A line that *ends* the comment has no unmatched opening marker above
+        // it -- the line's own `*/` balances the `/**`. But a comment must have
+        // been open at the start of that line, or the marker would close
+        // nothing. Without this the last line of a block comment was the one
+        // line typing did nothing in.
+        if depth == 0 && !lines[at].contains(comment.end) {
+            continue;
+        }
+        let Some(open) = last_open else { continue };
+        let better = best.is_none_or(|(best_open, best_comment)| {
+            open > best_open
+                || (open == best_open && comment.start.len() > best_comment.start.len())
+        });
+        if better {
+            best = Some((open, comment));
+        }
+    }
+    best.map(|(_, comment)| comment)
+}
+
+/// Where the text of a comment line begins, for counting characters past markers.
+///
+/// Auto-wrap tracks the cursor by counting non-space characters, and a marker is
+/// not text: `#` and the space after it must not be counted, or a repeated marker
+/// on a wrapped line would shift the count and the cursor would land on the wrong
+/// word. A hanging indent (`#    text`) is spaces, so it needs no special case --
+/// it is simply not counted.
+pub(crate) fn content_offset(language: &Language, line: &str) -> usize {
+    let indent = crate::markdown::leading_whitespace(line);
+    let rest = &line[indent.len()..];
+    if let Some(comment) = marker_at(language, rest) {
+        let after = &rest[comment.start.trim_end().len()..];
+        let after = after.strip_prefix(' ').unwrap_or(after);
+        return line.len() - after.len();
+    }
+    // A continuation line's decoration character, e.g. ` * text`.
+    for comment in language.comments {
+        if comment.kind != Kind::Delimited || comment.decorate.is_empty() {
+            continue;
+        }
+        if let Some(after) = rest.strip_prefix(comment.decorate) {
+            let after = after.strip_prefix(' ').unwrap_or(after);
+            return line.len() - after.len();
+        }
+    }
+    indent.len()
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{File, Settings};
