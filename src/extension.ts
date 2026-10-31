@@ -198,6 +198,9 @@ export function activate (context: vscode.ExtensionContext): void {
       const change = event.contentChanges[0]
       if (change.rangeLength > 0) return
       loadEngine(context)
+      // No ruler means no column, and auto-wrap does nothing: a prompt cannot
+      // appear while someone is typing, and guessing a column is worse than
+      // leaving the line alone. An explicit wrap asks instead.
       const column = columnFor(event.document)
       if (column === undefined) return
       const edit = maybe_auto_wrap(
@@ -209,6 +212,10 @@ export function activate (context: vscode.ExtensionContext): void {
       const applied = await editor.edit(builder =>
         apply(event.document, edit).forEach(e => builder.replace(e.range, e.newText)))
       if (applied && edit.selections) {
+        // Applied after the edit resolves, so the position the engine computed
+        // is not shifted by the replacement itself. This is what puts the cursor
+        // after the word the wrap pushed down, instead of leaving it on the line
+        // that just got shorter.
         const s = edit.selections
         editor.selections = [new vscode.Selection(s[0], s[1], s[2], s[3])]
       }

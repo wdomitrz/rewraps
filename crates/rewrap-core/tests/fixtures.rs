@@ -383,3 +383,172 @@ fn a_cursor_on_code_does_nothing() {
     let edit = rewrap_core::rewrap(&file, &settings, &[cursor], &lines);
     assert!(edit.is_empty(), "code must be left alone: {:?}", edit.lines);
 }
+
+/// The auto-wrap path, which runs on every keystroke.
+///
+/// It had no tests at all until this file: the feature was described, shipped and
+/// then reported broken -- the cursor stayed behind on the shortened line instead
+/// of following the word it had just pushed down.
+mod auto_wrap {
+    use rewrap_core::{maybe_auto_wrap, File, Position, Settings};
+
+    fn settings() -> Settings {
+        Settings {
+            column: 30,
+            tab_width: 4,
+        }
+    }
+
+    fn rust() -> File {
+        File {
+            language: "rust".into(),
+            path: "x.rs".into(),
+        }
+    }
+
+    /// Type `text` at `column` of `line`, returning the edit and the cursor.
+    fn type_at(
+        lines: &[&str],
+        line: usize,
+        column: usize,
+        text: &str,
+    ) -> (Vec<String>, Option<(usize, usize)>) {
+        let file = rust();
+        let edit = maybe_auto_wrap(
+            &file,
+            &settings(),
+            text,
+            Position {
+                line,
+                character: column,
+            },
+            lines,
+        );
+        let cursor = edit
+            .selections
+            .as_ref()
+            .and_then(|s| s.first())
+            .map(|s| (s.active.line, s.active.character));
+        let out = if edit.is_empty() {
+            lines.iter().map(|l| (*l).to_string()).collect()
+        } else {
+            edit.lines.clone()
+        };
+        (out, cursor)
+    }
+
+    #[test]
+    fn a_space_that_still_fits_does_nothing() {
+        // The line is under the column even with the space typed, so there is
+        // nothing to do -- auto-wrap is about overflow, not about tidiness.
+        let line = "// alpha beta gamma delta ";
+        let (out, cursor) = type_at(&[line], 0, line.len() - 1, " ");
+        assert_eq!(out, vec![line]);
+        assert_eq!(cursor, None);
+    }
+
+    #[test]
+    fn a_real_overflow_pushes_a_word_down_and_takes_the_cursor_with_it() {
+        let line = "// alpha beta gamma delta epsilon ";
+        let (out, cursor) = type_at(&[line], 0, line.len() - 1, " ");
+        assert_eq!(out, vec!["// alpha beta gamma delta", "// epsilon"]);
+        assert_eq!(
+            cursor,
+            Some((1, "// epsilon".len())),
+            "cursor must be after the word it pushed down"
+        );
+    }
+
+    #[test]
+    fn typing_inside_the_column_does_nothing() {
+        let line = "// short ";
+        let (out, cursor) = type_at(&[line], 0, line.len() - 1, " ");
+        assert_eq!(out, vec!["// short "]);
+        assert_eq!(cursor, None, "no edit, so the editor keeps its own cursor");
+    }
+
+    #[test]
+    fn a_one_line_block_comment_wraps_with_its_decoration_and_tracks_the_cursor() {
+        let line = "/* alpha beta gamma delta epsilon */";
+        let (out, cursor) = type_at(&[line], 0, 34, " ");
+        assert_eq!(out, vec!["/* alpha beta gamma delta", " * epsilon */"]);
+        // The cursor belongs after "epsilon", on the continuation line -- before
+        // the closing marker, not past it.
+        assert_eq!(cursor, Some((1, " * epsilon".len())));
+    }
+
+    #[test]
+    fn a_javadoc_one_liner_tracks_the_cursor_the_same_way() {
+        let file = File {
+            language: "typescript".into(),
+            path: "x.ts".into(),
+        };
+        let settings = Settings {
+            column: 30,
+            tab_width: 4,
+        };
+        let line = "/** alpha beta gamma delta epsilon */";
+        let edit = maybe_auto_wrap(
+            &file,
+            &settings,
+            " ",
+            Position {
+                line: 0,
+                character: line.len() - 1,
+            },
+            &[line],
+        );
+        assert_eq!(
+            edit.lines,
+            vec!["/** alpha beta gamma delta", " * epsilon */"]
+        );
+        let cursor = edit.selections.expect("cursor")[0].active;
+        assert_eq!((cursor.line, cursor.character), (1, " * epsilon".len()));
+    }
+
+    #[test]
+    fn a_paste_is_not_auto_wrapped() {
+        let line = "// alpha beta gamma delta epsilon zeta eta theta";
+        let (out, cursor) = type_at(&[line], 0, 3, "alpha beta gamma delta epsilon zeta ");
+        assert_eq!(out, vec![line], "a paste must not trigger a rewrite");
+        assert_eq!(cursor, None);
+    }
+
+    #[test]
+    fn code_is_never_auto_wrapped() {
+        let line = "let alpha = beta_gamma_delta_epsilon_zeta_eta = 1;";
+        let (out, cursor) = type_at(&[line], 0, 20, " ");
+        assert_eq!(out, vec![line]);
+        assert_eq!(cursor, None);
+    }
+
+    #[test]
+    fn a_typed_newline_keeps_the_cursor_below_the_text_it_pushed_down() {
+        // The editor has already split the line: line 0 is the old text, line 1
+        // is what follows the newline.
+        let lines = ["// alpha beta gamma delta epsilon", ""];
+        let file = rust();
+        let settings = Settings {
+            column: 30,
+            tab_width: 4,
+        };
+        let edit = maybe_auto_wrap(
+            &file,
+            &settings,
+            "\n",
+            Position {
+                line: 0,
+                character: lines[0].len(),
+            },
+            &lines,
+        );
+        assert!(!edit.is_empty(), "the first line was past the column");
+        let cursor = edit.selections.expect("auto-wrap sets the cursor")[0].active;
+        assert_eq!(
+            cursor.line,
+            edit.lines.len(),
+            "cursor belongs below the wrapped lines"
+        );
+        assert_eq!(cursor.character, 0);
+    }
+}

@@ -176,3 +176,126 @@ mod tests {
         assert_eq!(fill(&settings(), "", "// ", "// ", 20), vec!["//"]);
     }
 }
+
+impl crate::Settings {
+    /// Fill, and say where a source character ends up.
+    ///
+    /// `cursor` is a character index into `text`. The returned position is the
+    /// output line and the column within it (counting the prefix), placed just
+    /// after the last non-space character that precedes the cursor in the
+    /// source. Counting characters instead of tracking offsets is deliberate: a
+    /// break consumes the run of spaces it breaks at, so the spaces themselves
+    /// have no position in the output, and the character a reader would point at
+    /// is the word before them.
+    pub(crate) fn fill_tracked(
+        &self,
+        text: &str,
+        first: &str,
+        cont: &str,
+        column: usize,
+        cursor: Option<usize>,
+    ) -> (Vec<String>, Option<(usize, usize)>) {
+        let lines = fill(self, text, first, cont, column);
+        let Some(cursor) = cursor else {
+            return (lines, None);
+        };
+        let wanted = text
+            .chars()
+            .take(cursor)
+            .filter(|c| !c.is_whitespace())
+            .count();
+        let position = locate(&lines, first, cont, wanted);
+        (lines, Some(position))
+    }
+}
+
+/// The position just after the `wanted`-th non-space character of the output.
+///
+/// Prefixes are skipped, not counted: a comment marker repeated on every line is
+/// not text the cursor can be "inside", and counting it would put the cursor in
+/// the marker of the last line rather than after the last word.
+fn locate(lines: &[String], first: &str, cont: &str, wanted: usize) -> (usize, usize) {
+    let prefix_chars = |index: usize| {
+        let prefix = if index == 0 { first } else { cont };
+        prefix.chars().count()
+    };
+    if wanted == 0 {
+        let start = lines
+            .first()
+            .map_or(0, |_| prefix_chars(0).min(lines[0].chars().count()));
+        return (0, start);
+    }
+    let mut seen = 0usize;
+    for (index, line) in lines.iter().enumerate() {
+        let skip = prefix_chars(index);
+        for (at, character) in line.chars().enumerate().skip(skip) {
+            if character.is_whitespace() {
+                continue;
+            }
+            seen += 1;
+            if seen == wanted {
+                return (index, at + 1);
+            }
+        }
+    }
+    // Past the end: the last line, after its last character.
+    let last = lines.len().saturating_sub(1);
+    let column = lines.get(last).map_or(0, |line| line.chars().count());
+    (last, column)
+}
+
+#[cfg(test)]
+mod tracking_tests {
+    use crate::Settings;
+
+    fn settings() -> Settings {
+        Settings {
+            column: 20,
+            tab_width: 4,
+        }
+    }
+
+    #[test]
+    fn the_cursor_lands_after_the_last_word_it_was_typed_behind() {
+        // "alpha beta gamma delta" at column 20 breaks after "gamma"; a cursor
+        // at the end of the source text belongs after "delta".
+        let (lines, position) = settings().fill_tracked(
+            "alpha beta gamma delta",
+            "// ",
+            "// ",
+            20,
+            Some("alpha beta gamma delta".chars().count()),
+        );
+        assert_eq!(lines, vec!["// alpha beta gamma", "// delta"]);
+        assert_eq!(position, Some((1, "// delta".chars().count())));
+    }
+
+    #[test]
+    fn a_cursor_inside_the_text_stays_with_its_word() {
+        let (_, position) = settings().fill_tracked(
+            "alpha beta gamma delta",
+            "// ",
+            "// ",
+            20,
+            Some("alpha be".chars().count()),
+        );
+        // Mid-way through "beta" ("alphabe" is seven non-space characters), so
+        // the cursor sits after the seventh -- the second letter of "beta".
+        assert_eq!(position, Some((0, "// alpha be".chars().count())));
+        // Word-granular only when the cursor is at a word boundary.
+        let (_, at_word) = settings().fill_tracked(
+            "alpha beta gamma delta",
+            "// ",
+            "// ",
+            20,
+            Some("alpha beta".chars().count()),
+        );
+        assert_eq!(at_word, Some((0, "// alpha beta".chars().count())));
+    }
+
+    #[test]
+    fn a_cursor_at_the_start_goes_to_the_start_of_the_text() {
+        let (_, position) = settings().fill_tracked("alpha beta", "// ", "// ", 20, Some(0));
+        assert_eq!(position, Some((0, 3)));
+    }
+}

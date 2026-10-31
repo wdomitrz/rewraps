@@ -21,8 +21,8 @@ column = 40
 -- output
 // Example usage:
 //
-// 	alpha beta gamma delta epsilon zeta eta theta
-// 	second line of code
+//	alpha beta gamma delta epsilon zeta eta theta
+//	second line of code
 [case]
 name = code is untouched
 language = go
@@ -31,3 +31,11 @@ column = 20
 func main() { println("alpha beta gamma") }
 -- output
 func main() { println("alpha beta gamma") }
+[case]
+name = a tab-indented code sample keeps its tab and is not marked as changed
+language = go
+column = 88
+-- input
+//	short code sample
+-- output
+//	short code sample

@@ -2,7 +2,7 @@
   "name": "rewraps",
   "displayName": "Rewraps",
   "description": "Hard word wrapping for comments and other text, at a given column.",
-  "version": "0.3.1",
+  "version": "0.4.1",
   "publisher": "wdomitrz",
   "license": "AGPL-3.0-only",
   "repository": { "type": "git", "url": "https://github.com/wdomitrz/rewraps.git" },

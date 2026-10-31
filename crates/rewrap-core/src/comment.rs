@@ -123,19 +123,32 @@ fn line_run(
         // code sample inside a comment a code sample -- godoc treats an indented
         // line as code, and trimming here would reflow it into prose.
         let after = &rest[comment.start.len()..];
-        let after = after.strip_prefix(' ').unwrap_or(after).trim_end();
-        // An empty comment line keeps the marker and nothing else: emitting the
-        // separating space would leave trailing whitespace all over the file.
-        // The marker is emitted with exactly one space after it, even when the
-        // marker itself ends in one (`rem ` in batch files): repeating the
-        // marker's own trailing space would widen the comment on every wrap.
-        let marker = comment.start.trim_end();
-        let prefix = if after.is_empty() {
-            format!("{indent}{marker}")
-        } else {
-            format!("{indent}{marker} ")
+        // Remember whether a space separated the marker from the text, because
+        // it has to be put back only if it was there. A tab-indented godoc code
+        // sample (`//<tab>code`) is indented by that tab: adding a space turns
+        // it into `// <tab>code` and shifts the sample by a column. Every wrap
+        // did that, so a file that was already correct still came out modified
+        // -- and `--check` called it a change.
+        let (separated, body) = match after.strip_prefix(' ') {
+            Some(rest) => (true, rest),
+            None => (false, after),
         };
-        bodies.push(Line::new(prefix, after));
+        let body = body.trim_end();
+        // The marker is emitted without its own trailing space (`rem ` in batch
+        // files), and exactly one separator goes back: the marker's own space if
+        // it had one, or the one that was between it and the text. A marker
+        // followed directly by a tab keeps the tab and gains nothing, which is
+        // what stops a godoc code sample shifting by a column.
+        let marker = comment.start.trim_end();
+        let marker_had_space = comment.start.len() != marker.len();
+        // An empty comment line keeps the marker and nothing else, so no
+        // trailing whitespace is left behind.
+        let separator = if body.is_empty() || !(separated || marker_had_space) {
+            ""
+        } else {
+            " "
+        };
+        bodies.push(Line::new(format!("{indent}{marker}{separator}"), body));
         i += 1;
     }
     let body: Vec<Line> = bodies.into_iter().collect();
@@ -372,6 +385,95 @@ fn string_block(
     Some((chunks, i))
 }
 
+/// How one line of a comment splits into marker, text and closing marker.
+///
+/// Auto-wrap wraps a single line while typing, so it needs to know which part of
+/// that line is the comment and which is the text -- the cursor offset it is
+/// given counts from the start of the line, marker included. Returning all four
+/// pieces here keeps that knowledge in one place instead of duplicating the
+/// marker rules a second time.
+pub(crate) struct LineParts {
+    /// Where the text starts in the source line.
+    pub content_start: usize,
+    /// Where the text ends -- before the closing marker, when the line had one.
+    pub content_end: usize,
+    /// What goes before the first output line.
+    pub first: String,
+    /// What goes before every later output line.
+    pub cont: String,
+    /// The closing marker, when the source line ended the comment on that line.
+    pub suffix: String,
+}
+
+/// Split one line of a comment, if this line begins a comment that is complete
+/// on that line (or is a plain line comment).
+///
+/// A block comment that continues past this line is deliberately not handled:
+/// its text belongs to several source lines, and choosing which of them the
+/// cursor is in needs the whole block, not the line.
+pub(crate) fn single_line_parts(language: &Language, line: &str) -> Option<LineParts> {
+    let indent = crate::markdown::leading_whitespace(line);
+    let rest = &line[indent.len()..];
+    let mut best: Option<&'static Comment> = None;
+    for comment in language.comments {
+        if comment.kind == Kind::String || !rest.starts_with(comment.start) {
+            continue;
+        }
+        if let Some(next) = comment.not_followed_by.chars().next() {
+            if rest[comment.start.len()..].starts_with(next) {
+                continue;
+            }
+        }
+        if best.is_none_or(|current| comment.start.len() > current.start.len()) {
+            best = Some(comment);
+        }
+    }
+    let comment = best?;
+    let after_start = &rest[comment.start.len()..];
+    let (separated, body) = match after_start.strip_prefix(' ') {
+        Some(rest) => (true, rest),
+        None => (false, after_start),
+    };
+    let marker = comment.start.trim_end();
+    // The separating space goes back only if one was there; a marker followed
+    // directly by a tab keeps the tab and gains nothing.
+    let marker_had_space = comment.start.len() != marker.len();
+    let separator = if separated || marker_had_space {
+        " "
+    } else {
+        ""
+    };
+    let first_prefix = format!("{indent}{marker}{separator}");
+
+    match comment.kind {
+        Kind::Line => Some(LineParts {
+            content_start: line.len() - body.len(),
+            content_end: line.len(),
+            first: first_prefix.clone(),
+            cont: first_prefix,
+            suffix: String::new(),
+        }),
+        _ => {
+            // A block comment that closes on this line only; the text stops
+            // before the closing marker, which is emitted separately.
+            let close = body.find(comment.end)?;
+            let cont_marker = if comment.decorate.is_empty() {
+                indent.clone()
+            } else {
+                format!("{indent} {} ", comment.decorate)
+            };
+            Some(LineParts {
+                content_start: line.len() - body.len(),
+                content_end: line.len() - body.len() + close,
+                first: first_prefix,
+                cont: cont_marker,
+                suffix: format!(" {}", comment.end),
+            })
+        }
+    }
+}
+
+#[cfg(test)]
 #[cfg(test)]
 mod tests {
     use crate::{File, Settings};
